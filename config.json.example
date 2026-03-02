@@ -1,0 +1,6 @@
+{
+  "api_host": "https://grsai.dakka.com.cn",
+  "api_key": "your_api_key_here",
+  "host_overseas": "https://grsaiapi.com",
+  "host_china": "https://grsai.dakka.com.cn"
+}
