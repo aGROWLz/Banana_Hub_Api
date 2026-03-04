@@ -62,6 +62,11 @@
   - 1K（默认）
   - 2K（部分模型支持）
   - 4K（仅 nano-banana-pro-4k-vip 支持）
+- **seed**: 随机种子
+  - 用于控制 ComfyUI 的缓存行为
+  - 改变 seed 值会强制节点重新执行
+  - 相同输入 + 相同 seed = 使用缓存结果（快速）
+  - 相同输入 + 不同 seed = 重新生成（每次都调用 API）
 - **api_host_preset**: API Host 选择
   - 使用配置文件（默认）
   - 海外 Host

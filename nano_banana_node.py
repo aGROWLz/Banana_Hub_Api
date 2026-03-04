@@ -82,6 +82,13 @@ class NanoBananaNode(comfy_io.ComfyNode):
                     options=["1K", "2K", "4K"],
                     default="1K"
                 ),
+                comfy_io.Int.Input(
+                    "seed",
+                    default=0,
+                    min=0,
+                    max=0xffffffffffffffff,
+                    display_mode=comfy_io.NumberDisplay.number,
+                ),
                 comfy_io.Combo.Input(
                     "api_host_preset",
                     options=["使用配置文件", "海外 Host", "国内 Host", "自定义"],
@@ -134,7 +141,7 @@ class NanoBananaNode(comfy_io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, prompt, model, aspect_ratio, image_size, api_host_preset, custom_host, api_key_override, timeout, max_retries, poll_interval, save_to_output, image1=None, image1_desc="", image2=None, image2_desc="", image3=None, image3_desc="", image4=None, image4_desc="", image5=None, image5_desc="") -> comfy_io.NodeOutput:
+    def execute(cls, prompt, model, aspect_ratio, image_size, seed, api_host_preset, custom_host, api_key_override, timeout, max_retries, poll_interval, save_to_output, image1=None, image1_desc="", image2=None, image2_desc="", image3=None, image3_desc="", image4=None, image4_desc="", image5=None, image5_desc="") -> comfy_io.NodeOutput:
         log_messages = []  # 用于输出日志口
         
         def log(msg, icon="", console_only=False):
@@ -180,6 +187,7 @@ class NanoBananaNode(comfy_io.ComfyNode):
             log(f"使用 API Host: {api_host}", "🌐")
             log(f"使用模型: {model}", "🤖")
             log(f"图片尺寸: {image_size}, 宽高比: {aspect_ratio}", "📐")
+            log(f"随机种子: {seed}", "🎲")
             
             # 收集所有输入的图片
             input_images = []
@@ -451,3 +459,11 @@ class NanoBananaNode(comfy_io.ComfyNode):
     def _create_error_output(cls, log_messages, error_msg):
         """已废弃：现在直接抛出异常而不是返回错误图片"""
         pass
+    
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        """
+        返回 seed 值，让 ComfyUI 知道输入变化了
+        当 seed 改变时，强制重新执行节点，避免使用缓存
+        """
+        return kwargs.get("seed", 0)
