@@ -166,7 +166,7 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 ),
                 comfy_io.Int.Input(
                     "timeout",
-                    default=120,
+                    default=300,
                     min=10,
                     max=600,
                     step=10,
