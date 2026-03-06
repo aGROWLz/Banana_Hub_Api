@@ -1,4 +1,4 @@
-from .nano_banana_node import NanoBananaNode
+from .banana_node import BananaImageGenerationNode
 from typing_extensions import override
 from comfy_api.latest import ComfyExtension, io
 
@@ -7,7 +7,7 @@ class GrsaiApiExtension(ComfyExtension):
     @override
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
         return [
-            NanoBananaNode,
+            BananaImageGenerationNode,
         ]
 
 

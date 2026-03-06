@@ -1,0 +1,47 @@
+{
+  "name": "BltAI API",
+  "description": "BltAI 中转站 - OpenAI Dall-e Edits 格式",
+  "endpoints": {
+    "draw": "/v1/images/edits"
+  },
+  "hosts": {
+    "china": "https://api.bltcy.ai",
+    "overseas": "https://api.bltcy.ai",
+    "custom": "https://api.bltcy.ai"
+  },
+  "default_host": "china",
+  "request_format": {
+    "draw": {
+      "method": "POST",
+      "content_type": "multipart/form-data",
+      "headers": {
+        "Authorization": "Bearer {api_key}"
+      },
+      "body": {
+        "model": "{model}",
+        "prompt": "{prompt}",
+        "aspect_ratio": "{aspect_ratio}",
+        "image_size": "{image_size}",
+        "image": "{image_files}",
+        "response_format": "url"
+      }
+    }
+  },
+  "response_format": {
+    "draw": {
+      "image_url_path": "data[0].url",
+      "b64_json_path": "data[0].b64_json",
+      "success_indicator": "data"
+    }
+  },
+  "models": [
+    "nano-banana-2",
+    "nano-banana-pro"
+  ],
+  "model_mapping": {
+    "nano-banana-2": "gemini-3.1-flash-image-preview",
+    "nano-banana-pro": "nano-banana-2"
+  },
+  "image_sizes": ["1K", "2K", "4K", "512px"],
+  "aspect_ratios": ["1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "4:5", "5:4", "21:9", "1:4", "4:1", "8:1", "1:8"]
+}
