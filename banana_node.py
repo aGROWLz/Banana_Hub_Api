@@ -83,13 +83,19 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                     aspect_ratios_map[ratio].append(provider_name)
         
         # 构建显示选项（带提供商标注）
-        def build_options(value_map, show_providers=True, exclude_from_annotation=None):
+        def build_options(value_map, show_providers=True, exclude_from_annotation=None, custom_sort=None):
             """构建选项列表，格式：value (provider1, provider2)"""
             if exclude_from_annotation is None:
                 exclude_from_annotation = []
             
             options = []
-            for value, providers in sorted(value_map.items()):
+            # 使用自定义排序或默认排序
+            if custom_sort:
+                sorted_items = custom_sort(value_map.items())
+            else:
+                sorted_items = sorted(value_map.items())
+            
+            for value, providers in sorted_items:
                 if show_providers and value not in exclude_from_annotation:
                     providers_str = ", ".join(providers)
                     display_text = f"{value} ({providers_str})"
@@ -98,11 +104,18 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 options.append(display_text)
             return options
         
+        # aspect_ratio 自定义排序：auto 放最前面，其他按字母排序
+        def sort_aspect_ratios(items):
+            items_list = list(items)
+            auto_items = [item for item in items_list if item[0] == "auto"]
+            other_items = sorted([item for item in items_list if item[0] != "auto"])
+            return auto_items + other_items
+        
         # nano-banana-2 和 nano-banana-pro 不显示提供商标注，其他模型显示
         exclude_models = ["nano-banana-2", "nano-banana-pro"]
-        models_options = build_options(models_map, show_providers=True, exclude_from_annotation=exclude_models) if models_map else ["nano-banana-fast (Grsai API)"]
+        models_options = build_options(models_map, show_providers=True, exclude_from_annotation=exclude_models) if models_map else ["nano-banana-2"]
         image_sizes_options = build_options(image_sizes_map, show_providers=False) if image_sizes_map else ["1K"]
-        aspect_ratios_options = build_options(aspect_ratios_map, show_providers=False) if aspect_ratios_map else ["auto"]
+        aspect_ratios_options = build_options(aspect_ratios_map, show_providers=False, custom_sort=sort_aspect_ratios) if aspect_ratios_map else ["auto"]
         
         return comfy_io.Schema(
             node_id="BananaImageGeneration",
@@ -132,12 +145,12 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 comfy_io.Combo.Input(
                     "model",
                     options=models_options,
-                    default=models_options[0] if models_options else "nano-banana-fast (Grsai API)"
+                    default="nano-banana-2" if "nano-banana-2" in [m.split(" (")[0] for m in models_options] else (models_options[0] if models_options else "nano-banana-2")
                 ),
                 comfy_io.Combo.Input(
                     "aspect_ratio",
                     options=aspect_ratios_options,
-                    default=aspect_ratios_options[0] if aspect_ratios_options else "auto"
+                    default="auto" if "auto" in aspect_ratios_options else (aspect_ratios_options[0] if aspect_ratios_options else "auto")
                 ),
                 comfy_io.Combo.Input(
                     "image_size",
