@@ -6,7 +6,7 @@
   },
   "hosts": {
     "china": "https://api.bltcy.ai",
-    "overseas": "https://api.bltcy.ai",
+    "overseas": "https://api.gptbest.vip",
     "custom": "https://api.bltcy.ai"
   },
   "default_host": "china",
