@@ -1,1 +1,10 @@
 git_function/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Config file with API keys
+config.json
