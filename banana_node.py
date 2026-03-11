@@ -297,28 +297,110 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
             # 构建请求
             draw_endpoint = provider.get_endpoint("draw")
             result_endpoint = provider.get_endpoint("result")
-            draw_url = f"{api_host}{draw_endpoint}"
-            result_url = f"{api_host}{result_endpoint}"
-            
-            log(f"发送绘画请求到: {draw_url}", "📤")
-            log(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}", "✍️")
             
             # 映射模型名称（如果提供商有模型映射）
             mapped_model = provider.map_model(model)
             if mapped_model != model:
                 log(f"模型映射: {model} -> {mapped_model}", "🔄", console_only=True)
             
-            # 使用 API 提供商构建请求
-            draw_request = provider.build_request(
-                "draw",
-                api_key=api_key,
-                model=mapped_model,
-                prompt=prompt,
-                aspect_ratio=aspect_ratio,
-                image_size=image_size,
-                urls=urls_list,
-                image_files=image_files
-            )
+            # 替换 URL 中的模型占位符（Gemini 原生格式）
+            draw_url = f"{api_host}{draw_endpoint}".replace("{model}", mapped_model)
+            result_url = f"{api_host}{result_endpoint}" if result_endpoint else ""
+            
+            log(f"发送绘画请求到: {draw_url}", "📤")
+            log(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}", "✍️")
+            
+            # 检查 API 格式类型
+            is_chat_format = "/chat/completions" in draw_endpoint
+            is_gemini_format = ":generateContent" in draw_endpoint
+            
+            if is_gemini_format:
+                # 构建 Gemini 原生格式的 contents
+                contents = [
+                    {
+                        "role": "user",
+                        "parts": []
+                    }
+                ]
+                
+                # 添加图片（使用 inlineData 格式，纯 base64 不带前缀）
+                for idx, url in enumerate(urls_list):
+                    # 移除 data:image/png;base64, 前缀
+                    if url.startswith("data:image/png;base64,"):
+                        base64_data = url.replace("data:image/png;base64,", "")
+                    else:
+                        base64_data = url
+                    
+                    contents[0]["parts"].append({
+                        "inlineData": {
+                            "mimeType": "image/png",
+                            "data": base64_data
+                        }
+                    })
+                
+                # 添加文本内容
+                contents[0]["parts"].append({
+                    "text": prompt
+                })
+                
+                log(f"构建 Gemini 原生格式，{len(urls_list)} 张图片 + 文本", "🔷", console_only=True)
+                
+                # 使用 API 提供商构建请求
+                draw_request = provider.build_request(
+                    "draw",
+                    api_key=api_key,
+                    model=mapped_model,
+                    contents=contents,
+                    aspect_ratio=aspect_ratio,
+                    image_size=image_size
+                )
+            elif is_chat_format:
+                # 构建 Chat Completions 格式的 messages
+                messages = [
+                    {
+                        "role": "user",
+                        "content": []
+                    }
+                ]
+                
+                # 添加文本内容
+                messages[0]["content"].append({
+                    "type": "text",
+                    "text": prompt
+                })
+                
+                # 添加图片（使用 base64 格式）
+                for url in urls_list:
+                    messages[0]["content"].append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": url
+                        }
+                    })
+                
+                log(f"构建 Chat Completions 消息，文本 + {len(urls_list)} 张图片", "💬", console_only=True)
+                
+                # 使用 API 提供商构建请求
+                draw_request = provider.build_request(
+                    "draw",
+                    api_key=api_key,
+                    model=mapped_model,
+                    messages=messages,
+                    aspect_ratio=aspect_ratio,
+                    image_size=image_size
+                )
+            else:
+                # 使用 API 提供商构建请求（普通格式）
+                draw_request = provider.build_request(
+                    "draw",
+                    api_key=api_key,
+                    model=mapped_model,
+                    prompt=prompt,
+                    aspect_ratio=aspect_ratio,
+                    image_size=image_size,
+                    urls=urls_list,
+                    image_files=image_files
+                )
             
             # 检查请求类型
             content_type = draw_request.get("content_type", "application/json")
@@ -394,11 +476,120 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 log(f"响应内容: {response.text[:500]}", "ℹ️")  # 只显示前500字符
                 raise RuntimeError(f"{error_msg}\n响应内容: {response.text[:200]}")
             
-            log(f"绘画请求响应: {json.dumps(result, ensure_ascii=False)}", "📥")
+            log(f"绘画请求响应: {json.dumps(result, ensure_ascii=False)[:500]}...", "📥")
             
-            # 检查是否是同步返回结果（如 bltai）
+            # 检查是否是同步返回结果（如 bltai, 147ai）
             draw_response_format = provider.response_format.get("draw", {})
-            if "image_url_path" in draw_response_format or "b64_json_path" in draw_response_format:
+            
+            # Gemini 原生格式（147AI）- 返回 base64 图片数据
+            if "image_data_path" in draw_response_format:
+                log("检测到 Gemini 原生格式，直接处理结果", "🔷")
+                
+                image_data = provider._get_nested_value(result, draw_response_format["image_data_path"])
+                
+                if image_data:
+                    log("获取到 base64 编码的图片数据", "🎨")
+                    
+                    try:
+                        # 解码 base64 图片
+                        img_bytes = base64.b64decode(image_data)
+                        result_img = Image.open(io.BytesIO(img_bytes))
+                        result_img = result_img.convert("RGB")
+                        
+                        img_width, img_height = result_img.size
+                        log(f"图片尺寸: {img_width}x{img_height}", "📏")
+                        
+                        # 保存图片
+                        if save_to_output == "启用":
+                            try:
+                                output_dir = folder_paths.get_output_directory()
+                                banana_dir = os.path.join(output_dir, "banana")
+                                os.makedirs(banana_dir, exist_ok=True)
+                                
+                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                filename = f"banana_{timestamp}_{provider.name.replace(' ', '_')}.png"
+                                filepath = os.path.join(banana_dir, filename)
+                                
+                                result_img.save(filepath, "PNG")
+                                log(f"图片已保存: {filepath}", "💾")
+                            except Exception as save_error:
+                                log(f"保存图片失败: {str(save_error)}", "⚠️")
+                        else:
+                            log("已跳过保存图片（保存功能已禁用）", "ℹ️")
+                        
+                        img_array = np.array(result_img).astype(np.float32) / 255.0
+                        img_tensor = torch.from_numpy(img_array)[None,]
+                        
+                        log("处理完成", "✅")
+                        log_text = "\n".join(log_messages)
+                        
+                        return comfy_io.NodeOutput(img_tensor, log_text)
+                    except Exception as decode_error:
+                        error_msg = f"解码 base64 图片失败: {str(decode_error)}"
+                        log(error_msg, "❌")
+                        raise RuntimeError(error_msg)
+                else:
+                    error_msg = "Gemini 响应中未找到图片数据"
+                    log(error_msg, "❌")
+                    raise RuntimeError(error_msg)
+            
+            # Chat Completions 格式（旧版 147AI）
+            elif "content_path" in draw_response_format:
+                log("检测到 Chat Completions 格式，直接处理结果", "⚡")
+                
+                content = provider._get_nested_value(result, draw_response_format["content_path"])
+                
+                if content:
+                    # content 可能是图片 URL 或包含图片 URL 的文本
+                    image_url = content.strip()
+                    
+                    log(f"获取到结果图片 URL: {image_url}", "🎨")
+                    log("正在下载图片...", "⬇️", console_only=True)
+                    
+                    img_response = requests.get(image_url, timeout=timeout)
+                    if img_response.status_code == 200:
+                        result_img = Image.open(io.BytesIO(img_response.content))
+                        result_img = result_img.convert("RGB")
+                        
+                        img_width, img_height = result_img.size
+                        log(f"图片尺寸: {img_width}x{img_height}", "📏")
+                        
+                        # 保存图片
+                        if save_to_output == "启用":
+                            try:
+                                output_dir = folder_paths.get_output_directory()
+                                banana_dir = os.path.join(output_dir, "banana")
+                                os.makedirs(banana_dir, exist_ok=True)
+                                
+                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                filename = f"banana_{timestamp}_{provider.name.replace(' ', '_')}.png"
+                                filepath = os.path.join(banana_dir, filename)
+                                
+                                result_img.save(filepath, "PNG")
+                                log(f"图片已保存: {filepath}", "💾")
+                            except Exception as save_error:
+                                log(f"保存图片失败: {str(save_error)}", "⚠️")
+                        else:
+                            log("已跳过保存图片（保存功能已禁用）", "ℹ️")
+                        
+                        img_array = np.array(result_img).astype(np.float32) / 255.0
+                        img_tensor = torch.from_numpy(img_array)[None,]
+                        
+                        log("处理完成", "✅")
+                        log_text = "\n".join(log_messages)
+                        
+                        return comfy_io.NodeOutput(img_tensor, log_text)
+                    else:
+                        error_msg = f"下载图片失败: {img_response.status_code}"
+                        log(error_msg, "❌")
+                        raise RuntimeError(error_msg)
+                else:
+                    error_msg = "Chat Completions 响应中未找到内容"
+                    log(error_msg, "❌")
+                    raise RuntimeError(error_msg)
+            
+            # 其他同步 API（bltai）
+            elif "image_url_path" in draw_response_format or "b64_json_path" in draw_response_format:
                 # 同步 API，直接从响应中获取图片
                 log("检测到同步 API，直接处理结果", "⚡")
                 

@@ -50,23 +50,9 @@ class APIProvider:
         if content_type != "multipart/form-data":
             headers["Content-Type"] = content_type
         
-        # 构建 body
-        body = {}
+        # 构建 body（支持嵌套对象）
         body_template = format_config.get("body", {})
-        
-        for key, value in body_template.items():
-            # 检查是否是占位符
-            if isinstance(value, str) and value.startswith("{") and value.endswith("}"):
-                placeholder_key = value[1:-1]
-                # 如果提供了这个参数，就使用它
-                if placeholder_key in kwargs:
-                    param_value = kwargs[placeholder_key]
-                    # 只有当值不为空时才添加
-                    if param_value or param_value == 0 or param_value == False:
-                        body[key] = param_value
-            else:
-                # 非占位符，直接使用
-                body[key] = value
+        body = self._build_body_recursive(body_template, kwargs)
         
         return {
             "method": format_config.get("method", "POST"),
@@ -74,6 +60,31 @@ class APIProvider:
             "body": body,
             "content_type": content_type
         }
+    
+    def _build_body_recursive(self, template: Any, values: Dict) -> Any:
+        """递归构建请求体，支持嵌套对象"""
+        if isinstance(template, dict):
+            result = {}
+            for key, value in template.items():
+                built_value = self._build_body_recursive(value, values)
+                # 只添加非 None 的值
+                if built_value is not None:
+                    result[key] = built_value
+            return result
+        elif isinstance(template, list):
+            return [self._build_body_recursive(item, values) for item in template]
+        elif isinstance(template, str) and template.startswith("{") and template.endswith("}"):
+            # 占位符
+            placeholder_key = template[1:-1]
+            if placeholder_key in values:
+                param_value = values[placeholder_key]
+                # 只返回非空值
+                if param_value or param_value == 0 or param_value == False:
+                    return param_value
+            return None
+        else:
+            # 普通值
+            return template
     
     def parse_response(self, endpoint_name: str, response_data: Dict) -> Dict[str, Any]:
         """解析响应"""

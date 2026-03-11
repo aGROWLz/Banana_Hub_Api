@@ -1,6 +1,7 @@
 {
   "api_keys": {
     "grsai_api": "your_grsai_api_key_here",
-    "bltai_api": "your_bltai_api_key_here"
+    "bltai_api": "your_bltai_api_key_here",
+    "147ai_api": "your_147ai_api_key_here"
   }
 }

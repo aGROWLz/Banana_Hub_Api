@@ -1,0 +1,50 @@
+{
+  "name": "147AI API",
+  "description": "147AI 中转站 - Google Gemini 原生格式",
+  "endpoints": {
+    "draw": "/v1beta/models/{model}:generateContent"
+  },
+  "hosts": {
+    "china": "https://api.147ai.cn",
+    "overseas": "https://api.147ai.cn",
+    "custom": "https://api.147ai.cn"
+  },
+  "default_host": "china",
+  "request_format": {
+    "draw": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer {api_key}"
+      },
+      "body": {
+        "contents": "{contents}",
+        "generationConfig": {
+          "responseModalities": ["IMAGE"],
+          "imageConfig": {
+            "aspectRatio": "{aspect_ratio}",
+            "imageSize": "{image_size}"
+          }
+        }
+      }
+    }
+  },
+  "response_format": {
+    "draw": {
+      "image_data_path": "candidates[0].content.parts[0].inlineData.data",
+      "mime_type_path": "candidates[0].content.parts[0].inlineData.mimeType",
+      "success_indicator": "candidates"
+    }
+  },
+  "models": [
+    "gemini-3.1-flash-image-preview",
+    "gemini-3-pro-image-preview"
+  ],
+  "model_mapping": {
+    "nano-banana-2": "gemini-3.1-flash-image-preview",
+    "nano-banana-pro": "gemini-3-pro-image-preview"
+  },
+  "image_sizes": ["2K", "4K"],
+  "aspect_ratios": ["auto","1:1", "16:9", "9:16", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9"]
+}
