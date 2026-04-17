@@ -840,9 +840,6 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
         except Exception as e:
             error_msg = f"发生错误: {str(e)}"
             log(error_msg, "❌")
-            import traceback
-            traceback_str = traceback.format_exc()
-            log(traceback_str, "🔍")
             raise
     
     @classmethod

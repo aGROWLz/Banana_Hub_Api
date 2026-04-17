@@ -1,0 +1,42 @@
+{
+  "name": "Gemini API",
+  "description": "Gemini Chat Completions API - 支持图片和视频输入",
+  "endpoints": {
+    "draw": "/v1/chat/completions",
+    "result": ""
+  },
+  "hosts": {
+    "china": "https://api.bltcy.ai",
+    "overseas": "https://api.gptbest.vip",
+    "custom": "https://api.bltcy.ai"
+  },
+  "default_host": "china",
+  "request_format": {
+    "draw": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Authorization": "Bearer {api_key}",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "model": "{model}",
+        "messages": "{messages}",
+        "temperature": 0.7,
+        "max_tokens": 4000
+      }
+    }
+  },
+  "response_format": {
+    "draw": {
+      "text_content_path": "choices[0].message.content",
+      "success_indicator": "choices"
+    }
+  },
+  "models": [
+    "gemini-3.1-flash-lite-preview"
+  ],
+  "model_mapping": {},
+  "image_sizes": [],
+  "aspect_ratios": []
+}

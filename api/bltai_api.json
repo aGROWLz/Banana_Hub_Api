@@ -40,7 +40,7 @@
   ],
   "model_mapping": {
     "nano-banana-2": "gemini-3.1-flash-image-preview",
-    "nano-banana-pro": "nano-banana-2"
+    "nano-banana-pro": "nano-banana-pro"
   },
   "image_sizes": ["1K", "2K", "4K", "512px"],
   "aspect_ratios": ["auto", "1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "4:5", "5:4", "21:9", "1:4", "4:1", "8:1", "1:8"]
