@@ -156,7 +156,8 @@ class GeminiVisionNode(comfy_io.ComfyNode):
                 
                 buffered = io.BytesIO()
                 pil_img.save(buffered, format="PNG")
-                img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                buffered.seek(0)
+                img_base64 = base64.b64encode(buffered.read()).decode('utf-8')
                 
                 messages[0]["content"].append({
                     "type": "image_url",
@@ -184,7 +185,7 @@ class GeminiVisionNode(comfy_io.ComfyNode):
                 })
                 log(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}", "✍️")
             
-            if not image and not video_url:
+            if image is None and not video_url:
                 error_msg = "请至少提供图片或视频 URL 之一"
                 log(error_msg, "❌")
                 raise ValueError(error_msg)
@@ -273,4 +274,8 @@ class GeminiVisionNode(comfy_io.ComfyNode):
     
     @classmethod
     def IS_CHANGED(cls, **kwargs):
-        return kwargs.get("image", 0)
+        image = kwargs.get("image")
+        if image is not None:
+            # 将 tensor 转换为可哈希的值（使用 id 或形状信息）
+            return hash(image.cpu().numpy().tobytes())
+        return 0
