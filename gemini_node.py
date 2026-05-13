@@ -79,7 +79,7 @@ class GeminiVisionNode(comfy_io.ComfyNode):
                     "max_tokens",
                     default=4000,
                     min=100,
-                    max=8000,
+                    max=65536,
                     step=100,
                     display_mode=comfy_io.NumberDisplay.number,
                 ),
