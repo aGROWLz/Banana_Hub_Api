@@ -481,9 +481,77 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
             # 检查是否是同步返回结果（如 bltai, 147ai）
             draw_response_format = provider.response_format.get("draw", {})
             
-            # Gemini 原生格式（147AI）- 返回 base64 图片数据
-            if "image_data_path" in draw_response_format:
+            # Gemini 原生格式（返回 inline data）
+            if "inline_data_path" in draw_response_format:
                 log("检测到 Gemini 原生格式，直接处理结果", "🔷")
+                
+                parts_result = provider._get_nested_value(result, draw_response_format["inline_data_path"])
+                
+                if parts_result:
+                    image_data = None
+                    text_response = ""
+                    
+                    for part in parts_result:
+                        if "text" in part:
+                            text_response += part["text"]
+                        elif "inlineData" in part:
+                            image_data = part["inlineData"]
+                    
+                    if text_response:
+                        log(f"生成文本: {text_response}", "💬")
+                    
+                    if image_data:
+                        log("获取到生成的图片", "🎨")
+                        
+                        try:
+                            img_bytes = base64.b64decode(image_data["data"])
+                            result_img = Image.open(io.BytesIO(img_bytes))
+                            result_img = result_img.convert("RGB")
+                            
+                            img_width, img_height = result_img.size
+                            log(f"图片尺寸: {img_width}x{img_height}", "📏")
+                            
+                            # 保存图片
+                            if save_to_output == "启用":
+                                try:
+                                    output_dir = folder_paths.get_output_directory()
+                                    banana_dir = os.path.join(output_dir, "banana")
+                                    os.makedirs(banana_dir, exist_ok=True)
+                                    
+                                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                    filename = f"banana_{timestamp}_{provider.name.replace(' ', '_')}.png"
+                                    filepath = os.path.join(banana_dir, filename)
+                                    
+                                    result_img.save(filepath, "PNG")
+                                    log(f"图片已保存: {filepath}", "💾")
+                                except Exception as save_error:
+                                    log(f"保存图片失败: {str(save_error)}", "⚠️")
+                            else:
+                                log("已跳过保存图片（保存功能已禁用）", "ℹ️")
+                            
+                            img_array = np.array(result_img).astype(np.float32) / 255.0
+                            img_tensor = torch.from_numpy(img_array)[None,]
+                            
+                            log("处理完成", "✅")
+                            log_text = "\n".join(log_messages)
+                            
+                            return comfy_io.NodeOutput(img_tensor, log_text)
+                        except Exception as decode_error:
+                            error_msg = f"解码图片失败: {str(decode_error)}"
+                            log(error_msg, "❌")
+                            raise RuntimeError(error_msg)
+                    else:
+                        error_msg = "响应中未找到图片数据"
+                        log(error_msg, "❌")
+                        raise RuntimeError(error_msg)
+                else:
+                    error_msg = "Gemini 响应中未找到 parts 数据"
+                    log(error_msg, "❌")
+                    raise RuntimeError(error_msg)
+            
+            # Gemini 原生格式（147AI）- 返回 base64 图片数据
+            elif "image_data_path" in draw_response_format:
+                log("检测到 Gemini 原生格式（147AI），直接处理结果", "🔷")
                 
                 image_data = provider._get_nested_value(result, draw_response_format["image_data_path"])
                 
