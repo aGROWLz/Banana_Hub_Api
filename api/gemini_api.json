@@ -1,18 +1,18 @@
 {
-  "name": "Gemini API",
-  "description": "Gemini Chat Completions API - 支持图片和视频输入",
+  "name": "Vector Gemini Understanding API",
+  "description": "VectorEngine Gemini image/video understanding API.",
   "endpoints": {
-    "draw": "/v1/chat/completions",
-    "result": ""
+    "image_understanding": "/v1/chat/completions",
+    "video_understanding": "/v1/chat/completions"
   },
   "hosts": {
-    "china": "https://api.bltcy.ai",
-    "overseas": "https://api.gptbest.vip",
-    "custom": "https://api.bltcy.ai"
+    "china": "https://api.vectorengine.ai",
+    "overseas": "https://api.zhongzhuan.vip",
+    "custom": "https://api.vectorengine.ai"
   },
   "default_host": "china",
   "request_format": {
-    "draw": {
+    "image_understanding": {
       "method": "POST",
       "content_type": "application/json",
       "headers": {
@@ -22,13 +22,31 @@
       "body": {
         "model": "{model}",
         "messages": "{messages}",
-        "temperature": 0.7,
-        "max_tokens": 4000
+        "temperature": "{temperature}",
+        "max_tokens": "{max_tokens}"
+      }
+    },
+    "video_understanding": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Authorization": "Bearer {api_key}",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "model": "{model}",
+        "messages": "{messages}",
+        "temperature": "{temperature}",
+        "max_tokens": "{max_tokens}"
       }
     }
   },
   "response_format": {
-    "draw": {
+    "image_understanding": {
+      "text_content_path": "choices[0].message.content",
+      "success_indicator": "choices"
+    },
+    "video_understanding": {
       "text_content_path": "choices[0].message.content",
       "success_indicator": "choices"
     }

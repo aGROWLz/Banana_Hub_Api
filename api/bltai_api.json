@@ -1,37 +1,38 @@
 {
-  "name": "BltAI API",
-  "description": "BltAI 中转站 - OpenAI Dall-e Edits 格式",
+  "name": "Vector API",
+  "description": "Vector API - 适配 nano-banana 模型命名并映射到 Gemini 模型",
   "endpoints": {
-    "draw": "/v1/images/edits"
+    "draw": "/v1beta/models/{model}:generateContent"
   },
   "hosts": {
-    "china": "https://api.bltcy.ai",
-    "overseas": "https://api.gptbest.vip",
-    "custom": "https://api.bltcy.ai"
+    "china": "https://api.vectorengine.ai",
+    "overseas": "https://api.zhongzhuan.vip",
+    "custom": "https://api.vectorengine.ai"
   },
   "default_host": "china",
   "request_format": {
     "draw": {
       "method": "POST",
-      "content_type": "multipart/form-data",
+      "content_type": "application/json",
       "headers": {
-        "Authorization": "Bearer {api_key}"
+        "x-goog-api-key": "{api_key}",
+        "Content-Type": "application/json"
       },
       "body": {
-        "model": "{model}",
-        "prompt": "{prompt}",
-        "aspect_ratio": "{aspect_ratio}",
-        "image_size": "{image_size}",
-        "image": "{image_files}",
-        "response_format": "url"
+        "contents": "{contents}",
+        "generationConfig": {
+          "responseModalities": ["TEXT", "IMAGE"],
+          "imageConfig": {
+            "imageSize": "{image_size}"
+          }
+        }
       }
     }
   },
   "response_format": {
     "draw": {
-      "image_url_path": "data[0].url",
-      "b64_json_path": "data[0].b64_json",
-      "success_indicator": "data"
+      "inline_data_path": "candidates[0].content.parts",
+      "success_indicator": "candidates"
     }
   },
   "models": [
@@ -40,8 +41,8 @@
   ],
   "model_mapping": {
     "nano-banana-2": "gemini-3.1-flash-image-preview",
-    "nano-banana-pro": "nano-banana-pro"
+    "nano-banana-pro": "gemini-3.1-flash-image-preview"
   },
-  "image_sizes": ["1K", "2K", "4K", "512px"],
-  "aspect_ratios": ["auto", "1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "4:5", "5:4", "21:9", "1:4", "4:1", "8:1", "1:8"]
+  "image_sizes": ["1K", "2K", "4K"],
+  "aspect_ratios": ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5", "21:9"]
 }

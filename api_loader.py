@@ -78,8 +78,10 @@ class APIProvider:
             placeholder_key = template[1:-1]
             if placeholder_key in values:
                 param_value = values[placeholder_key]
-                # 只返回非空值
-                if param_value or param_value == 0 or param_value == False:
+                # 只返回非 None、非空值
+                if param_value is None:
+                    return None
+                if param_value or param_value == 0 or param_value is False:
                     return param_value
             return None
         else:

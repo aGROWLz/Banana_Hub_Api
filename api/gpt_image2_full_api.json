@@ -1,9 +1,8 @@
 {
-  "name": "Vector DALL-E 3 Image API",
-  "description": "VectorEngine DALL-E 3 image generation API - 支持图片输入编辑",
-  "gpt_image2_mode": "reverse",
+  "name": "Vector GPT-Image-2 Full API",
+  "description": "VectorEngine GPT-Image-2 edit API with behavior-focused parameters.",
+  "gpt_image2_mode": "official",
   "endpoints": {
-    "draw": "/v1/images/generations",
     "edit": "/v1/images/edits"
   },
   "hosts": {
@@ -13,20 +12,6 @@
   },
   "default_host": "china",
   "request_format": {
-    "draw": {
-      "method": "POST",
-      "content_type": "multipart/form-data",
-      "headers": {
-        "Authorization": "Bearer {api_key}",
-        "Accept": "application/json"
-      },
-      "body": {
-        "model": "{model}",
-        "prompt": "{prompt}",
-        "n": "{n}",
-        "size": "{size}"
-      }
-    },
     "edit": {
       "method": "POST",
       "content_type": "multipart/form-data",
@@ -38,7 +23,10 @@
         "model": "{model}",
         "prompt": "{prompt}",
         "n": "{n}",
-        "size": "{size}"
+        "size": "{size}",
+        "quality": "{quality}",
+        "moderation": "{moderation}",
+        "user": "{user}"
       }
     }
   },
@@ -50,13 +38,18 @@
     }
   },
   "models": [
-    "gpt-image-2-all"
+    "gpt-image-2"
   ],
   "model_mapping": {},
   "image_sizes": [
+    "auto",
     "1024x1024",
-    "1792x1024",
-    "1024x1792"
+    "1536x1024",
+    "1024x1536",
+    "2048x2048",
+    "2048x1152",
+    "3840x2160",
+    "2160x3840"
   ],
   "aspect_ratios": []
 }

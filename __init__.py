@@ -1,6 +1,7 @@
 from .banana_node import BananaImageGenerationNode
+from .banana_ratio_node import BananaAspectRatioNode
 from .gemini_node import GeminiVisionNode
-from .gpt_image2_node import GPTImage2ReverseNode, GPTImage2OfficialNode
+from .gpt_image2_node import GPTImage2FullNode, GPTImage2Node
 from typing_extensions import override
 from comfy_api.latest import ComfyExtension, io
 
@@ -10,9 +11,10 @@ class GrsaiApiExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
         return [
             BananaImageGenerationNode,
+            BananaAspectRatioNode,
             GeminiVisionNode,
-            GPTImage2ReverseNode,
-            GPTImage2OfficialNode,
+            GPTImage2Node,
+            GPTImage2FullNode,
         ]
 
 

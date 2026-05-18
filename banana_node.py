@@ -147,14 +147,12 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                     options=models_options,
                     default="nano-banana-2" if "nano-banana-2" in [m.split(" (")[0] for m in models_options] else (models_options[0] if models_options else "nano-banana-2")
                 ),
-                comfy_io.Combo.Input(
+                comfy_io.String.Input(
                     "aspect_ratio",
-                    options=aspect_ratios_options,
                     default="auto" if "auto" in aspect_ratios_options else (aspect_ratios_options[0] if aspect_ratios_options else "auto")
                 ),
-                comfy_io.Combo.Input(
+                comfy_io.String.Input(
                     "image_size",
-                    options=image_sizes_options,
                     default=image_sizes_options[0] if image_sizes_options else "1K"
                 ),
                 comfy_io.Int.Input(
@@ -224,6 +222,10 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
         model = extract_value(model)
         aspect_ratio = extract_value(aspect_ratio)
         image_size = extract_value(image_size)
+        
+        # 当 aspect_ratio 为 "auto" 时，设为 None，这样请求中就不会包含该字段
+        if aspect_ratio == "auto":
+            aspect_ratio = None
         
         try:
             # 加载配置和 API 提供商
