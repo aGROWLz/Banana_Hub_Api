@@ -23,8 +23,7 @@
       "body": {
         "model": "{model}",
         "prompt": "{prompt}",
-        "n": "{n}",
-        "size": "{size}"
+        "n": "{n}"
       }
     },
     "edit": {
@@ -37,8 +36,7 @@
       "body": {
         "model": "{model}",
         "prompt": "{prompt}",
-        "n": "{n}",
-        "size": "{size}"
+        "n": "{n}"
       }
     }
   },
