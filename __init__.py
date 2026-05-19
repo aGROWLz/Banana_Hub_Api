@@ -1,5 +1,5 @@
 from .banana_node import BananaImageGenerationNode
-from .banana_ratio_node import BananaAspectRatioNode
+from .banana_ratio_node import BananaAspectRatioNode, BananaImageSizeAdapterNode
 from .gemini_node import GeminiVisionNode
 from .gpt_image2_node import GPTImage2FullNode, GPTImage2Node
 from typing_extensions import override
@@ -12,6 +12,7 @@ class GrsaiApiExtension(ComfyExtension):
         return [
             BananaImageGenerationNode,
             BananaAspectRatioNode,
+            BananaImageSizeAdapterNode,
             GeminiVisionNode,
             GPTImage2Node,
             GPTImage2FullNode,

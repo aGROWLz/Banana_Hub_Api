@@ -13,6 +13,7 @@ from comfy_api.latest import io as comfy_io
 
 from .api_loader import APILoader
 from .gpt_image2_utils import build_request_payload
+from .image_size_utils import validate_size_dimensions
 
 
 class _GPTImage2BaseNode(comfy_io.ComfyNode):
@@ -334,13 +335,6 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
     def define_schema(cls) -> comfy_io.Schema:
         provider = cls._get_provider()
         models = provider.models if provider and provider.models else ["gpt-image-2"]
-        image_sizes = provider.image_sizes if provider and provider.image_sizes else [
-            "auto",
-            "1024x1024",
-            "1536x1024",
-            "1024x1536",
-        ]
-
         return comfy_io.Schema(
             node_id="GPTImage2Full",
             display_name="GPT-Image-2 (全参数)",
@@ -354,7 +348,22 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
                 comfy_io.String.Input("prompt", default="", multiline=True),
                 comfy_io.Combo.Input("host_type", options=["china", "overseas", "custom"], default="china"),
                 comfy_io.Combo.Input("model", options=models, default=models[0]),
-                comfy_io.Combo.Input("size", options=image_sizes, default=image_sizes[0]),
+                comfy_io.Int.Input(
+                    "width",
+                    default=1024,
+                    min=0,
+                    max=3840,
+                    step=16,
+                    display_mode=comfy_io.NumberDisplay.number,
+                ),
+                comfy_io.Int.Input(
+                    "height",
+                    default=1024,
+                    min=0,
+                    max=3840,
+                    step=16,
+                    display_mode=comfy_io.NumberDisplay.number,
+                ),
                 comfy_io.Int.Input("n", default=1, min=1, max=10, display_mode=comfy_io.NumberDisplay.number),
                 comfy_io.Combo.Input(
                     "quality",
@@ -389,7 +398,8 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
         host_type,
         prompt,
         model,
-        size,
+        width,
+        height,
         n,
         quality,
         moderation,
@@ -414,6 +424,9 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
         input_images = cls._collect_input_images(image1, image2, image3, image4, image5)
         provider = cls._get_provider()
         mapped_model = provider.map_model(model) if provider else model
+        size = validate_size_dimensions(width, height)
+
+        log(f"目标尺寸: {size}", "i")
 
         payload = {
             "content_type": "multipart/form-data",
