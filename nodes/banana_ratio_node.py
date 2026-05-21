@@ -1,6 +1,6 @@
 from comfy_api.latest import io as comfy_io
 
-from .image_size_utils import AUTO_SIZE, calculate_bucket_dimensions, ratio_to_string
+from ..utils import AUTO_SIZE, calculate_bucket_dimensions, ratio_to_string
 
 
 class BananaAspectRatioNode(comfy_io.ComfyNode):

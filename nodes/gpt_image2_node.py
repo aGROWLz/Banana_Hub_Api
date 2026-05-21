@@ -11,9 +11,7 @@ import torch
 from PIL import Image
 from comfy_api.latest import io as comfy_io
 
-from .api_loader import APILoader
-from .gpt_image2_utils import build_request_payload
-from .image_size_utils import validate_size_dimensions
+from ..utils import APILoader, build_request_payload, validate_size_dimensions
 
 
 class _GPTImage2BaseNode(comfy_io.ComfyNode):
@@ -25,12 +23,12 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
     @classmethod
     def _init_api_loader(cls):
         if cls.api_loader is None:
-            api_dir = os.path.join(os.path.dirname(__file__), "api")
+            api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
             cls.api_loader = APILoader(api_dir)
 
     @classmethod
     def _load_config(cls):
-        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
         default_config = {"api_keys": {}}
 
         if os.path.exists(config_path):

@@ -8,3 +8,12 @@ __pycache__/
 
 # Config file with API keys
 config.json
+
+# Trae IDE
+.trae/
+
+# Pytest cache
+.pytest_cache/
+
+# Tests directory
+tests/

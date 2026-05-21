@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 from comfy_api.latest import io as comfy_io
 import folder_paths
-from .api_loader import APILoader
+from ..utils import APILoader
 
 
 class BananaImageGenerationNode(comfy_io.ComfyNode):
@@ -26,13 +26,13 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
     def _init_api_loader(cls):
         """初始化 API 加载器"""
         if cls.api_loader is None:
-            api_dir = os.path.join(os.path.dirname(__file__), "api")
+            api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
             cls.api_loader = APILoader(api_dir)
 
     @classmethod
     def _load_config(cls):
         """加载用户配置文件"""
-        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
         default_config = {
             "api_keys": {}
         }

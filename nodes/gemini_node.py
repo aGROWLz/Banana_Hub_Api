@@ -9,7 +9,7 @@ from PIL import Image
 from comfy_api.latest import io as comfy_io
 
 import folder_paths
-from .api_loader import APILoader
+from ..utils import APILoader
 
 
 class GeminiVisionNode(comfy_io.ComfyNode):
@@ -22,12 +22,12 @@ class GeminiVisionNode(comfy_io.ComfyNode):
 
     @classmethod
     def _get_api_loader(cls):
-        api_dir = os.path.join(os.path.dirname(__file__), "api")
+        api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
         return APILoader(api_dir)
 
     @classmethod
     def _load_config(cls):
-        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
         default_config = {"api_keys": {}}
 
         if os.path.exists(config_path):
