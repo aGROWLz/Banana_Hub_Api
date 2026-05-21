@@ -340,7 +340,7 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
             display_name="GPT-Image-2 (全参数)",
             category="Banana",
             inputs=[
-                comfy_io.Image.Input("image1"),
+                comfy_io.Image.Input("image1", optional=True),
                 comfy_io.Image.Input("image2", optional=True),
                 comfy_io.Image.Input("image3", optional=True),
                 comfy_io.Image.Input("image4", optional=True),
@@ -407,7 +407,7 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
         seed,
         timeout,
         save_to_output,
-        image1,
+        image1=None,
         image2=None,
         image3=None,
         image4=None,
@@ -441,9 +441,12 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
             },
         }
         payload["body"] = {k: v for k, v in payload["body"].items() if v not in (None, "")}
+        request_name = "edit" if input_images else "draw"
+        if request_name == "draw":
+            payload["content_type"] = "application/json"
 
         img_tensor = cls._execute_request(
-            request_name="edit",
+            request_name=request_name,
             payload=payload,
             timeout=timeout,
             save_to_output=save_to_output,

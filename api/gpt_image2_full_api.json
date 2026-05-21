@@ -3,6 +3,7 @@
   "description": "VectorEngine GPT-Image-2 edit API with behavior-focused parameters.",
   "gpt_image2_mode": "official",
   "endpoints": {
+    "draw": "/v1/images/generations",
     "edit": "/v1/images/edits"
   },
   "hosts": {
@@ -12,6 +13,23 @@
   },
   "default_host": "china",
   "request_format": {
+    "draw": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Authorization": "Bearer {api_key}",
+        "Accept": "application/json"
+      },
+      "body": {
+        "model": "{model}",
+        "prompt": "{prompt}",
+        "n": "{n}",
+        "size": "{size}",
+        "quality": "{quality}",
+        "moderation": "{moderation}",
+        "user": "{user}"
+      }
+    },
     "edit": {
       "method": "POST",
       "content_type": "multipart/form-data",
