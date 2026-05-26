@@ -16,7 +16,7 @@ class GeminiVisionNode(comfy_io.ComfyNode):
     """Gemini image/video understanding node."""
 
     FIXED_API_PROVIDER = "gemini_api"
-    FIXED_MODEL = "gemini-3.1-flash-lite-preview"
+    FIXED_MODEL = "gemini-3.1-flash-lite"
     API_KEY_SOURCE = "gemini"
     LEGACY_API_KEY_SOURCES = ("gemini_api", "bltai_api")
 
