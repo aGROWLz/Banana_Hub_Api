@@ -613,41 +613,43 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                     # content 可能是图片 URL 或包含图片 URL 的文本
                     image_url = content.strip()
                     
-                    log(f"获取到结果图片 URL: {image_url}", "🎨")
+                    # 截断 base64 URL 用于日志显示
+                    log_url = f"{image_url[:10]}..." if image_url.startswith("data:") and len(image_url) > 10 else image_url
+                    log(f"获取到结果图片 URL: {log_url}", "🎨")
                     log("正在下载图片...", "⬇️", console_only=True)
-                    
+
                     img_response = requests.get(image_url, timeout=timeout)
                     if img_response.status_code == 200:
                         result_img = Image.open(io.BytesIO(img_response.content))
                         result_img = result_img.convert("RGB")
-                        
+
                         img_width, img_height = result_img.size
                         log(f"图片尺寸: {img_width}x{img_height}", "📏")
-                        
+
                         # 保存图片
                         if save_to_output == "启用":
                             try:
                                 output_dir = folder_paths.get_output_directory()
                                 banana_dir = os.path.join(output_dir, "banana")
                                 os.makedirs(banana_dir, exist_ok=True)
-                                
+
                                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                                 filename = f"banana_{timestamp}_{provider.name.replace(' ', '_')}.png"
                                 filepath = os.path.join(banana_dir, filename)
-                                
+
                                 result_img.save(filepath, "PNG")
                                 log(f"图片已保存: {filepath}", "💾")
                             except Exception as save_error:
                                 log(f"保存图片失败: {str(save_error)}", "⚠️")
                         else:
                             log("已跳过保存图片（保存功能已禁用）", "ℹ️")
-                        
+
                         img_array = np.array(result_img).astype(np.float32) / 255.0
                         img_tensor = torch.from_numpy(img_array)[None,]
-                        
+
                         log("处理完成", "✅")
                         log_text = "\n".join(log_messages)
-                        
+
                         return comfy_io.NodeOutput(img_tensor, log_text)
                     else:
                         error_msg = f"下载图片失败: {img_response.status_code}"
@@ -657,23 +659,25 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                     error_msg = "Chat Completions 响应中未找到内容"
                     log(error_msg, "❌")
                     raise RuntimeError(error_msg)
-            
+
             # 其他同步 API（bltai）
             elif "image_url_path" in draw_response_format or "b64_json_path" in draw_response_format:
                 # 同步 API，直接从响应中获取图片
                 log("检测到同步 API，直接处理结果", "⚡")
-                
+
                 image_url = None
                 b64_json = None
-                
+
                 if "image_url_path" in draw_response_format:
                     image_url = provider._get_nested_value(result, draw_response_format["image_url_path"])
-                
+
                 if "b64_json_path" in draw_response_format:
                     b64_json = provider._get_nested_value(result, draw_response_format["b64_json_path"])
-                
+
                 if image_url:
-                    log(f"获取到结果图片 URL: {image_url}", "🎨")
+                    # 截断 base64 URL 用于日志显示
+                    log_url = f"{image_url[:10]}..." if image_url.startswith("data:") and len(image_url) > 10 else image_url
+                    log(f"获取到结果图片 URL: {log_url}", "🎨")
                     log("正在下载图片...", "⬇️", console_only=True)
                     
                     img_response = requests.get(image_url, timeout=timeout)
@@ -836,7 +840,9 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                             log(f"生成内容: {content}", "💬")
                         
                         if image_url:
-                            log(f"获取到结果图片: {image_url}", "🎨")
+                            # 截断 base64 URL 用于日志显示
+                            log_url = f"{image_url[:10]}..." if image_url.startswith("data:") and len(image_url) > 10 else image_url
+                            log(f"获取到结果图片: {log_url}", "🎨")
                             log(f"轮询次数: {poll_count} 次", "🔢")
                             log(f"生成耗时: {elapsed_time:.2f} 秒", "⏱️")
                             log("正在下载图片...", "⬇️", console_only=True)

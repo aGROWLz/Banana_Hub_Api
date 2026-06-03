@@ -1,0 +1,75 @@
+{
+  "name": "Vector Grok Image API",
+  "description": "VectorEngine Grok image generation API - 支持文生图和图生图",
+  "endpoints": {
+    "draw": "/v1/images/generations",
+    "edit": "/v1/images/edits"
+  },
+  "hosts": {
+    "china": "https://api.vectorengine.ai",
+    "overseas": "https://api.zhongzhuan.vip",
+    "custom": "https://api.vectorengine.ai"
+  },
+  "default_host": "china",
+  "request_format": {
+    "draw": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Authorization": "Bearer {api_key}",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "model": "{model}",
+        "prompt": "{prompt}",
+        "n": "{n}",
+        "size": "{size}",
+        "quality": "{quality}",
+        "response_format": "{response_format}",
+        "style": "{style}",
+        "user": "{user}"
+      }
+    },
+    "edit": {
+      "method": "POST",
+      "content_type": "multipart/form-data",
+      "headers": {
+        "Authorization": "Bearer {api_key}",
+        "Accept": "application/json"
+      },
+      "body": {
+        "model": "{model}",
+        "prompt": "{prompt}",
+        "n": "{n}",
+        "size": "{size}",
+        "quality": "{quality}",
+        "response_format": "{response_format}",
+        "style": "{style}",
+        "user": "{user}"
+      }
+    }
+  },
+  "response_format": {
+    "draw": {
+      "image_url_path": "data[0].url",
+      "b64_json_path": "data[0].b64_json",
+      "success_indicator": "data"
+    },
+    "edit": {
+      "image_url_path": "data[0].url",
+      "b64_json_path": "data[0].b64_json",
+      "success_indicator": "data"
+    }
+  },
+  "models": [
+    "grok-imagine-image-pro",
+    "grok-imagine-image"
+  ],
+  "model_mapping": {},
+  "image_sizes": [
+    "1024x1024",
+    "1792x1024",
+    "1024x1792"
+  ],
+  "aspect_ratios": []
+}

@@ -5,6 +5,7 @@ from .nodes import (
     GeminiVisionNode,
     GPTImage2FullNode,
     GPTImage2Node,
+    GrokImageNode,
 )
 from typing_extensions import override
 from comfy_api.latest import ComfyExtension, io
@@ -20,6 +21,7 @@ class GrsaiApiExtension(ComfyExtension):
             GeminiVisionNode,
             GPTImage2Node,
             GPTImage2FullNode,
+            GrokImageNode,
         ]
 
 
