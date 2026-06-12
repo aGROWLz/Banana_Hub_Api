@@ -150,7 +150,11 @@ class _GrokImageBaseNode(comfy_io.ComfyNode):
         except json.JSONDecodeError:
             raise RuntimeError(f"API 返回的不是有效的 JSON 格式\n响应内容: {response.text[:200]}")
 
-        log(f"响应: {json.dumps(result, ensure_ascii=False)[:500]}...", "i")
+        # 截断响应中的 b64_json 数据用于日志显示
+        debug_result = json.dumps(result, ensure_ascii=False)
+        import re
+        debug_result = re.sub(r'"b64_json"\s*:\s*"[^"]{10}[^"]*"', lambda m: m.group()[:m.group().index('"b64_json"') + len('"b64_json"') + 13] + '..."', debug_result)
+        log(f"响应: {debug_result[:500]}...", "i")
         result_img = cls._extract_image(result, provider, timeout, log)
         if save_to_output == "启用":
             cls._save_image(result_img, log)

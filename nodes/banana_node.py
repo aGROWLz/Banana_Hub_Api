@@ -417,6 +417,22 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 debug_body = draw_request["body"].copy()
                 if "urls" in debug_body and debug_body["urls"]:
                     debug_body["urls"] = f"[{len(debug_body['urls'])} images]"
+                # 截断 contents 中的 base64 数据
+                if "contents" in debug_body and isinstance(debug_body["contents"], list):
+                    debug_contents = []
+                    for content in debug_body["contents"]:
+                        if isinstance(content, dict) and "parts" in content:
+                            debug_parts = []
+                            for part in content["parts"]:
+                                if isinstance(part, dict) and "inlineData" in part:
+                                    data_str = part["inlineData"].get("data", "")
+                                    debug_parts.append({"inlineData": {"data": f"{data_str[:10]}...", "mimeType": part["inlineData"].get("mimeType", "")}})
+                                else:
+                                    debug_parts.append(part)
+                            debug_contents.append({"parts": debug_parts})
+                        else:
+                            debug_contents.append(content)
+                    debug_body["contents"] = debug_contents
                 log(f"请求体 (json): {json.dumps(debug_body, ensure_ascii=False)}", "🔍", console_only=True)
             
             log("正在发送请求...", "⏳", console_only=True)
@@ -478,7 +494,11 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 log(f"响应内容: {response.text[:500]}", "ℹ️")  # 只显示前500字符
                 raise RuntimeError(f"{error_msg}\n响应内容: {response.text[:200]}")
             
-            log(f"绘画请求响应: {json.dumps(result, ensure_ascii=False)[:500]}...", "📥")
+            # 截断响应中的 b64_json 数据用于日志显示
+            debug_result = json.dumps(result, ensure_ascii=False)
+            import re
+            debug_result = re.sub(r'"b64_json"\s*:\s*"[^"]{10}[^"]*"', lambda m: m.group()[:m.group().index('"b64_json"') + len('"b64_json"') + 13] + '..."', debug_result)
+            log(f"绘画请求响应: {debug_result[:500]}...", "📥")
             
             # 检查是否是同步返回结果（如 bltai, 147ai）
             draw_response_format = provider.response_format.get("draw", {})
