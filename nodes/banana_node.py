@@ -488,12 +488,18 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
             
             # 尝试解析 JSON，如果失败则显示原始响应
             try:
+                if not response.text or response.text.strip() == "":
+                    error_msg = f"API 返回空响应（可能是欠费或服务异常）"
+                    log(error_msg, "❌")
+                    log(f"HTTP 状态码: {response.status_code}", "ℹ️")
+                    log(f"响应头: {dict(response.headers)}", "ℹ️")
+                    raise RuntimeError(error_msg)
                 result = response.json()
             except json.JSONDecodeError as e:
                 error_msg = f"API 返回的不是有效的 JSON 格式"
                 log(error_msg, "❌")
                 log(f"HTTP 状态码: {response.status_code}", "ℹ️")
-                log(f"响应内容: {response.text[:500]}", "ℹ️")  # 只显示前500字符
+                log(f"响应内容: {response.text[:500]}", "ℹ️")
                 raise RuntimeError(f"{error_msg}\n响应内容: {response.text[:200]}")
             
             # 截断响应中的 b64_json 数据用于日志显示
