@@ -2,8 +2,8 @@
   "name": "Grsai API",
   "description": "Grsai 官方 API",
   "endpoints": {
-    "draw": "/v1/draw/nano-banana",
-    "result": "/v1/draw/result"
+    "draw": "/v1/api/generate",
+    "result": "/v1/api/result"
   },
   "hosts": {
     "overseas": "https://grsaiapi.com",
@@ -20,51 +20,50 @@
       "body": {
         "model": "{model}",
         "prompt": "{prompt}",
+        "images": "{images}",
         "aspectRatio": "{aspect_ratio}",
         "imageSize": "{image_size}",
-        "urls": "{urls}",
-        "webHook": "-1",
-        "shutProgress": false
+        "replyType": "{reply_type}"
       }
     },
     "result": {
-      "method": "POST",
+      "method": "GET",
       "headers": {
-        "Content-Type": "application/json",
         "Authorization": "Bearer {api_key}"
       },
-      "body": {
+      "query_params": {
         "id": "{task_id}"
       }
     }
   },
   "response_format": {
     "draw": {
-      "task_id_path": "data.id",
-      "success_code": 0
+      "task_id_path": "id",
+      "success_status": ["running", "succeeded"]
     },
     "result": {
       "status_path": "status",
       "progress_path": "progress",
       "image_url_path": "results[0].url",
-      "content_path": "results[0].content",
       "error_path": "error",
-      "failure_reason_path": "failure_reason",
       "success_status": "succeeded",
       "failed_status": "failed",
-      "running_status": "running"
+      "running_status": "running",
+      "violation_status": "violation"
     }
   },
   "models": [
-    "nano-banana-2",
-    "nano-banana-fast",
     "nano-banana",
+    "nano-banana-fast",
+    "nano-banana-2",
+    "nano-banana-2-cl",
+    "nano-banana-2-4k-cl",
     "nano-banana-pro",
-    "nano-banana-pro-vt",
     "nano-banana-pro-cl",
     "nano-banana-pro-vip",
     "nano-banana-pro-4k-vip"
   ],
   "image_sizes": ["1K", "2K", "4K"],
-  "aspect_ratios": ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5", "21:9"]
+  "aspect_ratios": ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5", "21:9", "1:4", "4:1", "1:8", "8:1"],
+  "reply_types": ["json", "stream", "async"]
 }
