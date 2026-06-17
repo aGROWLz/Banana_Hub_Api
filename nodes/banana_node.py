@@ -803,6 +803,7 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
             last_progress = -1
             
             result_request = provider.build_request("result", api_key=api_key, task_id=task_id)
+            result_method = result_request.get("method", "POST")
             
             for retry in range(max_retries):
                 time.sleep(poll_interval)
@@ -811,12 +812,21 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 log(f"第 {poll_count}/{max_retries} 次查询结果...", "🔍", console_only=True)
                 
                 try:
-                    result_response = requests.post(
-                        result_url,
-                        headers=result_request["headers"],
-                        json=result_request["body"],
-                        timeout=timeout
-                    )
+                    # 根据请求方法选择 GET 或 POST
+                    if result_method == "GET":
+                        result_response = requests.get(
+                            result_url,
+                            headers=result_request["headers"],
+                            params=result_request.get("query_params", {}),
+                            timeout=timeout
+                        )
+                    else:
+                        result_response = requests.post(
+                            result_url,
+                            headers=result_request["headers"],
+                            json=result_request["body"],
+                            timeout=timeout
+                        )
                     
                     if result_response.status_code != 200:
                         log(f"查询失败: {result_response.status_code}", "⚠️", console_only=True)

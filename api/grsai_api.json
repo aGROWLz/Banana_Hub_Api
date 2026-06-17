@@ -20,10 +20,10 @@
       "body": {
         "model": "{model}",
         "prompt": "{prompt}",
-        "images": "{images}",
+        "images": "{urls}",
         "aspectRatio": "{aspect_ratio}",
         "imageSize": "{image_size}",
-        "replyType": "{reply_type}"
+        "replyType": "async"
       }
     },
     "result": {

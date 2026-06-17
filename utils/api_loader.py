@@ -40,6 +40,7 @@ class APIProvider:
         """构建请求"""
         format_config = self.request_format.get(endpoint_name, {})
         content_type = format_config.get("content_type", "application/json")
+        method = format_config.get("method", "POST")
         
         # 构建 headers
         headers = {}
@@ -54,12 +55,26 @@ class APIProvider:
         body_template = format_config.get("body", {})
         body = self._build_body_recursive(body_template, kwargs)
         
-        return {
-            "method": format_config.get("method", "POST"),
+        # 构建 query_params（用于 GET 请求）
+        query_params = {}
+        query_template = format_config.get("query_params", {})
+        for key, value in query_template.items():
+            replaced = self._replace_placeholders(value, kwargs)
+            if replaced is not None:
+                query_params[key] = replaced
+        
+        result = {
+            "method": method,
             "headers": headers,
             "body": body,
             "content_type": content_type
         }
+        
+        # 只有 GET 请求且有 query_params 时才添加
+        if method == "GET" and query_params:
+            result["query_params"] = query_params
+        
+        return result
     
     def _build_body_recursive(self, template: Any, values: Dict) -> Any:
         """递归构建请求体，支持嵌套对象"""
