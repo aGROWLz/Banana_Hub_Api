@@ -417,6 +417,8 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                 debug_body = draw_request["body"].copy()
                 if "urls" in debug_body and debug_body["urls"]:
                     debug_body["urls"] = f"[{len(debug_body['urls'])} images]"
+                if "images" in debug_body and debug_body["images"]:
+                    debug_body["images"] = f"[{len(debug_body['images'])} images]"
                 # 截断 contents 中的 base64 数据
                 if "contents" in debug_body and isinstance(debug_body["contents"], list):
                     debug_contents = []
@@ -848,6 +850,7 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                     success_status = provider.response_format["result"]["success_status"]
                     failed_status = provider.response_format["result"]["failed_status"]
                     running_status = provider.response_format["result"]["running_status"]
+                    violation_status = provider.response_format["result"].get("violation_status")
                     
                     # 控制台显示所有状态变化
                     if last_progress != progress or status != running_status:
@@ -920,10 +923,10 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
                             log(error_msg, "❌")
                             raise RuntimeError(error_msg)
                     
-                    elif status == failed_status:
+                    elif status == failed_status or (violation_status and status == violation_status):
                         failure_reason = provider._get_nested_value(data, provider.response_format["result"].get("failure_reason_path", "")) or ""
                         error_detail = provider._get_nested_value(data, provider.response_format["result"].get("error_path", "")) or ""
-                        error_msg = f"任务失败 - 原因: {failure_reason}, 详情: {error_detail}"
+                        error_msg = f"任务失败 - 状态: {status}, 原因: {failure_reason}, 详情: {error_detail}"
                         log(error_msg, "❌")
                         raise RuntimeError(error_msg)
                     
