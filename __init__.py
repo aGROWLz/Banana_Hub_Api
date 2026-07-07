@@ -6,6 +6,8 @@ from .nodes import (
     GPTImage2FullNode,
     GPTImage2Node,
     GrokImageNode,
+    CTGTestNode,
+    WanImageGenerationNode,
 )
 from typing_extensions import override
 from comfy_api.latest import ComfyExtension, io
@@ -22,6 +24,8 @@ class GrsaiApiExtension(ComfyExtension):
             GPTImage2Node,
             GPTImage2FullNode,
             GrokImageNode,
+            CTGTestNode,
+            WanImageGenerationNode,
         ]
 
 
