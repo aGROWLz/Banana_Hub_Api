@@ -7,6 +7,7 @@
     "gpt_image2_api": "your_gpt_image2_api_key_here",
     "vector_api": "your_vector_api_key_here",
     "grok_image_api": "your_grok_image_api_key_here",
-    "vai_api": "your_vai_api_key_here"
+    "vai_api": "your_vai_api_key_here",
+    "kk_api": "your_kk_api_key_here"
   }
 }
