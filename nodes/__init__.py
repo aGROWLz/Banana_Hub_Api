@@ -5,6 +5,7 @@ from .gpt_image2_node import GPTImage2FullNode, GPTImage2Node
 from .grok_image_node import GrokImageNode
 from .ctg_test_node import CTGTestNode
 from .wan_node import WanImageGenerationNode
+from .seedream_node import SeedreamImageGenerationNode
 
 __all__ = [
     "BananaImageGenerationNode",
@@ -16,4 +17,5 @@ __all__ = [
     "GrokImageNode",
     "CTGTestNode",
     "WanImageGenerationNode",
+    "SeedreamImageGenerationNode",
 ]

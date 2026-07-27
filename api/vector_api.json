@@ -5,9 +5,9 @@
     "draw": "/v1beta/models/{model}:generateContent"
   },
   "hosts": {
-    "china": "https://api.vectorengine.ai",
+    "china": "https://api.zhongzhuan.vip",
     "overseas": "https://api.zhongzhuan.vip",
-    "custom": "https://api.vectorengine.ai"
+    "custom": "https://api.zhongzhuan.vip"
   },
   "default_host": "china",
   "request_format": {
