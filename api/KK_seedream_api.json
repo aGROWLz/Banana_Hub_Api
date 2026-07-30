@@ -1,6 +1,6 @@
 {
   "name": "KK Seedream API",
-  "description": "KK 中转站 Seedream 图像生成 API - doubao-seedream-4.0/4.5/3.0",
+  "description": "KK 中转站 Seedream 图像生成 API - doubao-seedream-5.0/5.0-proro",
   "endpoints": {
     "draw": "/v1/images/generations"
   },
@@ -21,9 +21,9 @@
         "model": "{model}",
         "prompt": "{prompt}",
         "size": "{size}",
-        "n": "{n}",
         "seed": "{seed}",
         "response_format": "url",
+        "output_format": "png",
         "watermark": false
       }
     }
@@ -36,10 +36,8 @@
     }
   },
   "models": [
-    "doubao-seedream-4.5",
-    "doubao-seedream-4-0-250828",
-    "doubao-seedream-3.0-t2i",
-    "doubao-seededit-3.0-i2i"
+    "doubao-seedream-5-0-260128",
+    "doubao-seedream-5-0-pro-260628"
   ],
   "image_sizes": [
     "1024x1024",
