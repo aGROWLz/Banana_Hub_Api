@@ -1,7 +1,9 @@
 from .nodes import (
     BananaAspectRatioNode,
+    BananaAspectRatioNodeV2,
     BananaImageGenerationNode,
     BananaImageSizeAdapterNode,
+    BananaImageSizeAdapterNodeV2,
     GeminiVisionNode,
     GPTImage2FullNode,
     GPTImage2Node,
@@ -20,7 +22,9 @@ class GrsaiApiExtension(ComfyExtension):
         return [
             BananaImageGenerationNode,
             BananaAspectRatioNode,
+            BananaAspectRatioNodeV2,
             BananaImageSizeAdapterNode,
+            BananaImageSizeAdapterNodeV2,
             GeminiVisionNode,
             GPTImage2Node,
             GPTImage2FullNode,
