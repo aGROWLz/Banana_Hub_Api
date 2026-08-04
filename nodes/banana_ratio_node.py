@@ -132,7 +132,7 @@ class BananaAspectRatioNodeV2(comfy_io.ComfyNode):
                 ),
                 comfy_io.Combo.Input(
                     "image_size",
-                    options=["原始尺寸", "1K", "2K", "4K"],
+                    options=["原始尺寸", "1K", "2K", "2.5K", "3K", "3.5K", "4K"],
                     default="原始尺寸",
                 ),
             ],
@@ -171,7 +171,7 @@ class BananaAspectRatioNodeV2(comfy_io.ComfyNode):
 
 class BananaImageSizeAdapterNodeV2(comfy_io.ComfyNode):
     RATIO_OPTIONS = [AUTO_SIZE, "16:9", "9:16", "4:3", "3:4", "5:4", "4:5", "3:2", "2:3", "1:1"]
-    SIZE_OPTIONS = ["1K", "2K", "3K", "4K"]
+    SIZE_OPTIONS = ["1K", "2K", "2.5K", "3K", "3.5K", "4K"]
 
     @classmethod
     def define_schema(cls) -> comfy_io.Schema:
