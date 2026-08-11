@@ -1,0 +1,83 @@
+{
+  "name": "Kie.ai Qwen3 API",
+  "description": "Kie.ai 市场 Qwen3 Pro Image to Image（异步任务）",
+  "endpoints": {
+    "draw": "/api/v1/jobs/createTask",
+    "result": "/api/v1/jobs/recordInfo",
+    "upload": "/api/file-base64-upload"
+  },
+  "hosts": {
+    "china": "https://api.kie.ai",
+    "overseas": "https://api.kie.ai",
+    "custom": "https://api.kie.ai"
+  },
+  "upload_hosts": {
+    "china": "https://kieai.redpandaai.co",
+    "overseas": "https://kieai.redpandaai.co",
+    "custom": "https://kieai.redpandaai.co"
+  },
+  "default_host": "china",
+  "request_format": {
+    "draw": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Authorization": "Bearer {api_key}"
+      },
+      "body": {
+        "model": "{model}",
+        "input": {
+          "image_urls": "{image_urls}",
+          "prompt": "{prompt}",
+          "resolution": "{resolution}",
+          "image_size": "{image_size}",
+          "output_format": "{output_format}",
+          "prompt_extend": "{prompt_extend}",
+          "negative_prompt": "{negative_prompt}",
+          "seed": "{seed}",
+          "nsfw_checker": "{nsfw_checker}"
+        }
+      }
+    },
+    "result": {
+      "method": "GET",
+      "headers": {
+        "Authorization": "Bearer {api_key}"
+      },
+      "query_params": {
+        "taskId": "{task_id}"
+      }
+    },
+    "upload": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Authorization": "Bearer {api_key}"
+      },
+      "body": {
+        "base64Data": "{base64_data}",
+        "uploadPath": "images",
+        "fileName": "{file_name}"
+      }
+    }
+  },
+  "response_format": {
+    "draw": {
+      "task_id_path": "data.taskId"
+    },
+    "result": {
+      "status_path": "data.state",
+      "result_json_path": "data.resultJson",
+      "fail_msg_path": "data.failMsg",
+      "success_status": "success",
+      "failed_status": "fail"
+    },
+    "upload": {
+      "file_url_path": "data.fileUrl"
+    }
+  },
+  "models": ["qwen3/pro-image-to-image"],
+  "image_sizes": ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"],
+  "resolutions": ["1K", "2K"],
+  "output_formats": ["png", "jpeg"]
+}
