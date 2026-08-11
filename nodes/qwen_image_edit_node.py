@@ -75,6 +75,11 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                     placeholder="请输入编辑指令，如：将图中的人物换成戴帽子的",
                 ),
                 comfy_io.Combo.Input(
+                    "input_mode",
+                    options=["仅图生图", "支持文生图"],
+                    default="仅图生图",
+                ),
+                comfy_io.Combo.Input(
                     "model",
                     options=models,
                     default=models[0] if models else "qwen-image-2.0-pro",
@@ -93,7 +98,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                     "width",
                     default=1024,
                     min=512,
-                    max=2048,
+                    max=4096,
                     step=16,
                     display_mode=comfy_io.NumberDisplay.number,
                 ),
@@ -101,7 +106,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                     "height",
                     default=1024,
                     min=512,
-                    max=2048,
+                    max=4096,
                     step=16,
                     display_mode=comfy_io.NumberDisplay.number,
                 ),
@@ -164,6 +169,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
     def execute(
         cls,
         prompt,
+        input_mode,
         model,
         host_type,
         image_size,
@@ -207,7 +213,11 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                 if img is not None
             ]
             if not images:
-                raise ValueError("请至少提供 1 张输入图片")
+                if input_mode == "仅图生图":
+                    raise ValueError(
+                        "请至少提供 1 张输入图片（或将 input_mode 切换为「支持文生图」以允许纯文生图）"
+                    )
+                log("未输入图片，使用纯文生图模式", "💭")
 
             if not prompt or not prompt.strip():
                 raise ValueError("请输入编辑指令 prompt")
@@ -225,8 +235,20 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                 "✍️",
             )
 
-            # 构建 size：预设映射或自定义宽高
+            # 构建 size：预设映射或自定义宽高（校验总像素与宽高比）
             if image_size == cls.CUSTOM_SIZE:
+                total_pixels = width * height
+                min_pixels = 512 * 512
+                max_pixels = 2048 * 2048
+                if not (min_pixels <= total_pixels <= max_pixels):
+                    raise ValueError(
+                        f"自定义分辨率 {width}*{height} 的总像素 {total_pixels} 超出范围"
+                        f"（需在 {min_pixels}~{max_pixels} 之间）"
+                    )
+                if max(width, height) / min(width, height) > 8:
+                    raise ValueError(
+                        f"自定义分辨率 {width}*{height} 的宽高比需在 1:8 至 8:1 之间"
+                    )
                 size = f"{width}*{height}"
             else:
                 size = cls.SIZE_PRESETS.get(image_size)
