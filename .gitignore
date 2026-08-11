@@ -17,3 +17,5 @@ config.json
 
 # Tests directory
 tests/
+
+docs/
