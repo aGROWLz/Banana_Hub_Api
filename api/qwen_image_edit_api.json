@@ -1,0 +1,56 @@
+{
+  "name": "Qwen Image Edit API",
+  "description": "阿里云百炼 千问图像编辑 API",
+  "endpoints": {
+    "draw": "/api/v1/services/aigc/multimodal-generation/generation"
+  },
+  "hosts": {
+    "china": "https://dashscope.aliyuncs.com",
+    "overseas": "https://dashscope-intl.aliyuncs.com",
+    "custom": "https://dashscope.aliyuncs.com"
+  },
+  "default_host": "china",
+  "request_format": {
+    "draw": {
+      "method": "POST",
+      "content_type": "application/json",
+      "headers": {
+        "Authorization": "Bearer {api_key}"
+      },
+      "body": {
+        "model": "{model}",
+        "input": {
+          "messages": [
+            {
+              "role": "user",
+              "content": "{content}"
+            }
+          ]
+        },
+        "parameters": {
+          "negative_prompt": "{negative_prompt}",
+          "size": "{size}",
+          "prompt_extend": "{prompt_extend}",
+          "watermark": "{watermark}",
+          "seed": "{seed}"
+        }
+      }
+    }
+  },
+  "response_format": {
+    "draw": {
+      "image_url_path": "output.choices[0].message.content"
+    }
+  },
+  "models": [
+    "qwen-image-2.0-pro",
+    "qwen-image-2.0-pro-2026-06-22",
+    "qwen-image-2.0-pro-2026-04-22",
+    "qwen-image-2.0-pro-2026-03-03",
+    "qwen-image-2.0",
+    "qwen-image-2.0-2026-03-03",
+    "qwen-image-3.0-pro",
+    "qwen-image-3.0"
+  ],
+  "image_sizes": ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"]
+}
