@@ -9,6 +9,7 @@
     "grok_image_api": "your_grok_image_api_key_here",
     "vai_api": "your_vai_api_key_here",
     "kk_api": "your_kk_api_key_here",
-    "KK_seedream_api": "your_seedream_api_key_key_here"
+    "KK_seedream_api": "your_seedream_api_key_key_here",
+    "qwen_image_edit_api": "your_qwen_api_key_here"
   }
 }
