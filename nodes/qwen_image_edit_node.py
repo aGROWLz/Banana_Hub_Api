@@ -31,6 +31,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
         "16:9": "2560*1440",
         "21:9": "3024*1296",
     }
+    AUTO_SIZE = "自动"
     CUSTOM_SIZE = "自定义"
 
     @classmethod
@@ -58,7 +59,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
     def define_schema(cls) -> comfy_io.Schema:
         provider = cls._get_api_loader().get_provider(cls.FIXED_API_PROVIDER)
         models = provider.models if provider else ["qwen-image-2.0-pro"]
-        size_options = list(cls.SIZE_PRESETS.keys()) + [cls.CUSTOM_SIZE]
+        size_options = [cls.AUTO_SIZE] + list(cls.SIZE_PRESETS.keys()) + [cls.CUSTOM_SIZE]
 
         return comfy_io.Schema(
             node_id="QwenImageEdit",
@@ -235,8 +236,10 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                 "✍️",
             )
 
-            # 构建 size：预设映射或自定义宽高（校验总像素与宽高比）
-            if image_size == cls.CUSTOM_SIZE:
+            # 构建 size：自动（不传 size，由模型根据提示词推荐）/ 预设映射 / 自定义宽高（校验总像素与宽高比）
+            if image_size == cls.AUTO_SIZE:
+                size = None
+            elif image_size == cls.CUSTOM_SIZE:
                 total_pixels = width * height
                 min_pixels = 512 * 512
                 max_pixels = 2048 * 2048
@@ -252,7 +255,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                 size = f"{width}*{height}"
             else:
                 size = cls.SIZE_PRESETS.get(image_size)
-            log(f"输出分辨率: {size}", "📐")
+            log(f"输出分辨率: {size or '自动（由模型根据提示词推荐）'}", "📐")
 
             # 布尔参数映射
             prompt_extend_bool = prompt_extend == "启用"
