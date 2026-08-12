@@ -12,6 +12,7 @@ from .nodes import (
     WanImageGenerationNode,
     SeedreamImageGenerationNode,
     QwenImageEditNode,
+    KieAiQwen3ImageNode,
 )
 from typing_extensions import override
 from comfy_api.latest import ComfyExtension, io
@@ -34,6 +35,7 @@ class GrsaiApiExtension(ComfyExtension):
             WanImageGenerationNode,
             SeedreamImageGenerationNode,
             QwenImageEditNode,
+            KieAiQwen3ImageNode,
         ]
 
 
