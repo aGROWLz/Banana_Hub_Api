@@ -7,6 +7,7 @@ from .ctg_test_node import CTGTestNode
 from .wan_node import WanImageGenerationNode
 from .seedream_node import SeedreamImageGenerationNode
 from .qwen_image_edit_node import QwenImageEditNode
+from .kieai_qwen3_node import KieAiQwen3ImageNode
 
 __all__ = [
     "BananaImageGenerationNode",
@@ -22,4 +23,5 @@ __all__ = [
     "WanImageGenerationNode",
     "SeedreamImageGenerationNode",
     "QwenImageEditNode",
+    "KieAiQwen3ImageNode",
 ]
