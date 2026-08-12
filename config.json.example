@@ -13,6 +13,7 @@
     "volcengine_seedream_api": "your_volcengine_ark_api_key_here",
     "xku_seedream_api": "your_xku_api_key_here",
     "vector_seedream_api": "your_vector_api_key_here",
-    "qwen_image_edit_api": "your_qwen_api_key_here"
+    "qwen_image_edit_api": "your_qwen_api_key_here",
+    "kieai_qwen3_api": "your_kieai_api_key_here"
   }
 }
