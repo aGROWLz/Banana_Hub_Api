@@ -10,6 +10,7 @@ from datetime import datetime
 from comfy_api.latest import io as comfy_io
 import folder_paths
 from ..utils import APILoader
+from ..utils.seedream_utils import SEEDREAM_SIZE_PRESETS, validate_custom_size
 
 
 class SeedreamImageGenerationNode(comfy_io.ComfyNode):
@@ -64,15 +65,44 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
     @classmethod
     def define_schema(cls) -> comfy_io.Schema:
         cls._init_api_loader()
-        provider = cls.api_loader.get_provider("KK_seedream_api")
-        if not provider:
+        # 筛选 Seedream 相关的 API 提供商（KK 中转站 + 火山方舟官方）
+        provider_ids = [pid for pid in cls.api_loader.get_provider_ids() if "seedream" in pid.lower()]
+        if not provider_ids:
+            provider_ids = ["KK_seedream_api"]
+
+        # 合并所有提供商的模型：所有供应商都支持的模型不标注来源；
+        # 仅部分供应商支持的模型标注来源（如 "doubao-seedream-4-5-251128 (火山方舟 Seedream API)"）
+        model_providers = {}
+        for pid in provider_ids:
+            p = cls.api_loader.get_provider(pid)
+            if not p:
+                continue
+            for m in p.models:
+                model_providers.setdefault(m, []).append(p.name)
+
+        models = []
+        for m in sorted(model_providers):
+            if len(model_providers[m]) >= len(provider_ids):
+                models.append(m)
+            else:
+                models.append(f"{m} ({', '.join(model_providers[m])})")
+        if not models:
             models = ["doubao-seedream-5-0-260128"]
-            image_sizes = ["1024x1024", "1664x936", "936x1664", "1K", "2K", "4K"]
-        else:
-            models = provider.models
-            image_sizes = provider.image_sizes
-        
+
+        # 合并所有提供商的尺寸档位，并追加自定义选项
+        image_sizes = list(SEEDREAM_SIZE_PRESETS)
+        for pid in provider_ids:
+            p = cls.api_loader.get_provider(pid)
+            if p and p.image_sizes:
+                for s in p.image_sizes:
+                    if s not in image_sizes:
+                        image_sizes.append(s)
         image_sizes.append("自定义")
+
+        default_model = next(
+            (m for m in models if "doubao-seedream-5-0-pro-260628" in m),
+            models[0]
+        )
 
         return comfy_io.Schema(
             node_id="SeedreamImageGeneration",
@@ -90,29 +120,35 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
                     multiline=True,
                 ),
                 comfy_io.Combo.Input(
+                    "api_provider",
+                    options=provider_ids,
+                    default="KK_seedream_api" if "KK_seedream_api" in provider_ids else provider_ids[0]
+                ),
+                comfy_io.Combo.Input(
                     "model",
                     options=models,
-                    default=models[0] if models else "doubao-seedream-5-0-260128"
+                    default=default_model
                 ),
+                comfy_io.Combo.Input("host_type", options=["china", "overseas", "custom"], default="china"),
                 comfy_io.Combo.Input(
                     "image_size",
                     options=image_sizes,
-                    default="1024x1024" if "1024x1024" in image_sizes else image_sizes[0]
+                    default="2K" if "2K" in image_sizes else image_sizes[0]
                 ),
                 comfy_io.Int.Input(
                     "width",
-                    default=1024,
-                    min=512,
-                    max=4096,
-                    step=16,
+                    default=2048,
+                    min=1,
+                    max=16384,
+                    step=1,
                     display_mode=comfy_io.NumberDisplay.number,
                 ),
                 comfy_io.Int.Input(
                     "height",
-                    default=1024,
-                    min=512,
-                    max=4096,
-                    step=16,
+                    default=2048,
+                    min=1,
+                    max=16384,
+                    step=1,
                     display_mode=comfy_io.NumberDisplay.number,
                 ),
                 comfy_io.Int.Input(
@@ -145,7 +181,7 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
         )
 
     @classmethod
-    def execute(cls, prompt, model, image_size, width, height, seed, n, timeout,
+    def execute(cls, prompt, api_provider, model, host_type, image_size, width, height, seed, n, timeout,
                 image1=None, image2=None, image3=None, image4=None, image5=None) -> comfy_io.NodeOutput:
         
         cls._init_api_loader()
@@ -158,26 +194,30 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
             print(f"[Seedream API] {full_msg}")
 
         try:
+            # 从 "模型名 (提供商)" 格式中提取实际模型名
+            if '(' in model:
+                model = model.split('(')[0].strip()
+
             config = cls._load_config()
-            provider = cls.api_loader.get_provider("KK_seedream_api")
+            provider = cls.api_loader.get_provider(api_provider)
 
             if not provider:
-                raise ValueError("未找到 Seedream API 提供商配置 (KK_seedream_api)")
+                raise ValueError(f"未找到 Seedream API 提供商配置 ({api_provider})")
 
             log(f"使用 API 提供商: {provider.name}", "🔌")
 
-            api_host = provider.get_host("china")
+            api_host = provider.get_host(host_type)
             api_keys = config.get("api_keys", {})
-            api_key = api_keys.get("KK_seedream_api", "")
+            api_key = api_keys.get(api_provider, "")
 
             if not api_key:
-                raise ValueError("错误: 未设置 API Key，请在配置文件的 api_keys.KK_seedream_api 中设置")
+                raise ValueError(f"错误: 未设置 API Key，请在配置文件的 api_keys.{api_provider} 中设置")
 
             api_host = api_host.rstrip('/')
 
-            # 处理尺寸：自定义时用宽高拼接
+            # 处理尺寸：档位原样透传；自定义时校验宽高后拼接
             if image_size == "自定义":
-                actual_size = f"{width}x{height}"
+                actual_size = validate_custom_size(width, height)
                 log(f"使用自定义尺寸: {actual_size}", "📐")
             else:
                 actual_size = image_size
@@ -199,6 +239,11 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
 
             draw_endpoint = provider.get_endpoint("draw")
             draw_url = f"{api_host}{draw_endpoint}"
+
+            # 官方 API 要求 seed 在 -1 ~ 2147483647 之间；节点 UI 允许输入超大值，这里取模截断后再发送
+            if seed > 2147483647:
+                seed = seed % 2147483647
+                log(f"seed 超出上限，已截断为 {seed}", "🎲")
 
             request_body = {
                 "model": model,

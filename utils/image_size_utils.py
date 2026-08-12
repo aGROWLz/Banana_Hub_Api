@@ -81,10 +81,20 @@ def resolve_ratio(label, source_width, source_height):
     if label == AUTO_SIZE:
         validate_ratio(source_width, source_height)
         return source_width / source_height
-    if label not in RATIO_PRESETS:
-        raise ValueError(f"不支持的宽高比: {label}")
-    width, height = RATIO_PRESETS[label]
-    return width / height
+    if label in RATIO_PRESETS:
+        width, height = RATIO_PRESETS[label]
+        return width / height
+    # 支持任意 "a:b" 比例（如 "7:2"、"5:3"），供非标准比例场景使用
+    if isinstance(label, str) and ':' in label:
+        try:
+            w_str, h_str = label.split(':', 1)
+            w, h = float(w_str), float(h_str)
+        except (TypeError, ValueError):
+            raise ValueError(f"不支持的宽高比: {label}")
+        if w <= 0 or h <= 0:
+            raise ValueError(f"宽高比数值必须大于 0: {label}")
+        return w / h
+    raise ValueError(f"不支持的宽高比: {label}")
 
 
 def _build_dimensions_from_long_edge(long_edge, ratio):
@@ -123,4 +133,53 @@ def calculate_bucket_dimensions(source_width, source_height, ratio_label, size_b
         width, height = _build_dimensions_from_long_edge(target_long_edge, ratio)
 
     validate_size_dimensions(width, height)
+    return width, height
+
+
+# 档位 → 总像素上限（按名义分辨率 K² 计算，长边可突破档位名义值）
+PIXEL_BUDGETS = {
+    "1K": 1024 * 1024,
+    "2K": 2048 * 2048,
+    "2.5K": 2560 * 2560,
+    "3K": 3072 * 3072,
+    "3.5K": 3584 * 3584,
+    "4K": 4096 * 4096,
+}
+
+# 宽高比允许的极端范围（长边 / 短边 不超过 8）
+MAX_LONG_SHORT_RATIO = 8
+
+
+def calculate_dimensions_by_pixel_budget(source_width, source_height, ratio_label, size_bucket):
+    """按总像素上限计算宽高：宽×高 ≤ 档位 K²，长边可突破档位名义值。
+
+    比例由 ratio_label 决定（auto 取输入图比例 / 预设比例 / 任意 "a:b"），
+    支持 1:8 ~ 8:1 的极端比例。
+    """
+    if source_width <= 0 or source_height <= 0:
+        raise ValueError("输入图片宽高必须大于 0")
+    if size_bucket not in PIXEL_BUDGETS:
+        raise ValueError(f"不支持的尺寸档位: {size_bucket}")
+
+    ratio = resolve_ratio(ratio_label, source_width, source_height)
+    if not (1 / MAX_LONG_SHORT_RATIO <= ratio <= MAX_LONG_SHORT_RATIO):
+        raise ValueError(
+            f"宽高比 {ratio_label} 超出范围，需在 1:{MAX_LONG_SHORT_RATIO} ~ {MAX_LONG_SHORT_RATIO}:1 之间"
+        )
+
+    budget = PIXEL_BUDGETS[size_bucket]
+    # 理想宽高：宽×高 = budget 且 宽/高 = ratio
+    width = math.sqrt(budget * ratio)
+    height = math.sqrt(budget / ratio)
+
+    width = floor_to_multiple(width)
+    height = floor_to_multiple(height)
+
+    # 向下取整后极端情况下仍可能超预算，递减较长边
+    while width * height > budget and max(width, height) > MULTIPLE:
+        if width >= height:
+            width -= MULTIPLE
+        else:
+            height -= MULTIPLE
+
     return width, height

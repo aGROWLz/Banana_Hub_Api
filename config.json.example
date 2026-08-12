@@ -10,6 +10,9 @@
     "vai_api": "your_vai_api_key_here",
     "kk_api": "your_kk_api_key_here",
     "KK_seedream_api": "your_seedream_api_key_key_here",
+    "volcengine_seedream_api": "your_volcengine_ark_api_key_here",
+    "xku_seedream_api": "your_xku_api_key_here",
+    "vector_seedream_api": "your_vector_api_key_here",
     "qwen_image_edit_api": "your_qwen_api_key_here"
   }
 }

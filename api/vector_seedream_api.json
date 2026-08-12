@@ -1,13 +1,13 @@
 {
-  "name": "KK Seedream API",
-  "description": "KK 中转站 Seedream 图像生成 API - doubao-seedream-5.0/5.0-proro",
+  "name": "Vector Seedream API",
+  "description": "Vector 中转站 Seedream 图像生成 API - doubao-seedream-5.0/5.0-pro",
   "endpoints": {
     "draw": "/v1/images/generations"
   },
   "hosts": {
-    "china": "https://ai-api.kkidc.com",
-    "overseas": "https://ai-api.kkidc.com",
-    "custom": "https://ai-api.kkidc.com"
+    "china": "https://api.zhongzhuan.vip",
+    "overseas": "https://api.zhongzhuan.vip",
+    "custom": "https://api.zhongzhuan.vip"
   },
   "default_host": "china",
   "request_format": {

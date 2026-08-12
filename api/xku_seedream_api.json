@@ -1,13 +1,13 @@
 {
-  "name": "KK Seedream API",
-  "description": "KK 中转站 Seedream 图像生成 API - doubao-seedream-5.0/5.0-proro",
+  "name": "XKU Seedream API",
+  "description": "XKU 中转站 Doubao Seedream 图像生成 API（兼容火山方舟格式）",
   "endpoints": {
-    "draw": "/v1/images/generations"
+    "draw": "/doubao/v3/images/generations"
   },
   "hosts": {
-    "china": "https://ai-api.kkidc.com",
-    "overseas": "https://ai-api.kkidc.com",
-    "custom": "https://ai-api.kkidc.com"
+    "china": "https://api-ai.xku.com",
+    "overseas": "https://api-ai.xku.com",
+    "custom": "https://api-ai.xku.com"
   },
   "default_host": "china",
   "request_format": {
@@ -36,8 +36,8 @@
     }
   },
   "models": [
-    "doubao-seedream-5-0-260128",
-    "doubao-seedream-5-0-pro-260628"
+    "doubao-seedream-5-0-pro-260628",
+    "doubao-seedream-5-0-260128"
   ],
   "image_sizes": [
     "1K",

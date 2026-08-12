@@ -1,13 +1,13 @@
 {
-  "name": "KK Seedream API",
-  "description": "KK 中转站 Seedream 图像生成 API - doubao-seedream-5.0/5.0-proro",
+  "name": "火山方舟 Seedream API",
+  "description": "火山方舟官方 Doubao Seedream 图像生成 API（https://console.volcengine.com/ark）",
   "endpoints": {
-    "draw": "/v1/images/generations"
+    "draw": "/api/v3/images/generations"
   },
   "hosts": {
-    "china": "https://ai-api.kkidc.com",
-    "overseas": "https://ai-api.kkidc.com",
-    "custom": "https://ai-api.kkidc.com"
+    "china": "https://ark.cn-beijing.volces.com",
+    "overseas": "https://ark.ap-southeast-1.volces.com",
+    "custom": "https://ark.cn-beijing.volces.com"
   },
   "default_host": "china",
   "request_format": {
@@ -36,8 +36,10 @@
     }
   },
   "models": [
+    "doubao-seedream-5-0-pro-260628",
     "doubao-seedream-5-0-260128",
-    "doubao-seedream-5-0-pro-260628"
+    "doubao-seedream-4-5-251128",
+    "doubao-seedream-4-0-250828"
   ],
   "image_sizes": [
     "1K",

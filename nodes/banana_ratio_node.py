@@ -1,6 +1,6 @@
 from comfy_api.latest import io as comfy_io
 
-from ..utils import AUTO_SIZE, calculate_bucket_dimensions, ratio_to_string
+from ..utils import AUTO_SIZE, calculate_bucket_dimensions, calculate_dimensions_by_pixel_budget, ratio_to_string
 
 
 class BananaAspectRatioNode(comfy_io.ComfyNode):
@@ -152,9 +152,9 @@ class BananaAspectRatioNodeV2(comfy_io.ComfyNode):
             image_tensor = image[0] if len(image.shape) == 4 else image
             img_height, img_width = image_tensor.shape[:2]
 
-            # 根据 image_size 选项缩放尺寸
+            # 根据 image_size 选项缩放尺寸（按总像素上限计算，长边可突破档位名义值）
             if image_size != "原始尺寸":
-                width, height = calculate_bucket_dimensions(img_width, img_height, "auto", image_size)
+                width, height = calculate_dimensions_by_pixel_budget(img_width, img_height, "auto", image_size)
             else:
                 width, height = img_width, img_height
 
@@ -196,7 +196,8 @@ class BananaImageSizeAdapterNodeV2(comfy_io.ComfyNode):
     def execute(cls, image, aspect_ratio, image_size) -> comfy_io.NodeOutput:
         image_tensor = image[0] if len(image.shape) == 4 else image
         source_height, source_width, _ = image_tensor.shape
-        width, height = calculate_bucket_dimensions(
+        # V2 按总像素上限计算：宽×高 ≤ 档位 K²，长边可突破档位名义值，支持 1:8 ~ 8:1 极端比例
+        width, height = calculate_dimensions_by_pixel_budget(
             source_width,
             source_height,
             aspect_ratio,
