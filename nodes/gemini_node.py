@@ -19,10 +19,12 @@ class GeminiVisionNode(comfy_io.ComfyNode):
     FIXED_MODEL = "gemini-3.1-flash-lite"
     API_KEY_SOURCE = "gemini"
     LEGACY_API_KEY_SOURCES = ("gemini_api", "bltai_api")
+    # 本节点专属的 api 配置子文件夹
+    API_FOLDER = "gemini"
 
     @classmethod
     def _get_api_loader(cls):
-        api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
+        api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", cls.API_FOLDER)
         return APILoader(api_dir)
 
     @classmethod

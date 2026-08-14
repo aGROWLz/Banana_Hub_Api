@@ -22,10 +22,12 @@ class KieAiQwen3ImageNode(comfy_io.ComfyNode):
     API_KEY_SOURCE = "kieai_qwen3_api"
     FIXED_MODEL = "qwen3/pro-image-to-image"
     RUNNING_STATES = ("waiting", "queuing", "generating")
+    # 本节点专属的 api 配置子文件夹
+    API_FOLDER = "kieai_qwen3"
 
     @classmethod
     def _get_api_loader(cls):
-        api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
+        api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", cls.API_FOLDER)
         return APILoader(api_dir)
 
     @classmethod

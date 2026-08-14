@@ -19,11 +19,13 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
     provider_id = ""
     log_prefix = "GPT-Image-2"
     save_prefix = "gpt_image2"
+    # 本节点专属的 api 配置子文件夹
+    API_FOLDER = "gpt_image2"
 
     @classmethod
     def _init_api_loader(cls):
         if cls.api_loader is None:
-            api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
+            api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", cls.API_FOLDER)
             cls.api_loader = APILoader(api_dir)
 
     @classmethod

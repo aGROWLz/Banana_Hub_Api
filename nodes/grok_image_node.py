@@ -16,11 +16,13 @@ class _GrokImageBaseNode(comfy_io.ComfyNode):
     provider_id = ""
     log_prefix = "Grok-Image"
     save_prefix = "grok_image"
+    # 本节点专属的 api 配置子文件夹
+    API_FOLDER = "grok_image"
 
     @classmethod
     def _init_api_loader(cls):
         if cls.api_loader is None:
-            api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
+            api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", cls.API_FOLDER)
             cls.api_loader = APILoader(api_dir)
 
     @classmethod

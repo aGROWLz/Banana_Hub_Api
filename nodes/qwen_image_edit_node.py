@@ -19,6 +19,8 @@ class QwenImageEditNode(comfy_io.ComfyNode):
 
     FIXED_API_PROVIDER = "qwen_image_edit_api"
     API_KEY_SOURCE = "qwen_image_edit_api"
+    # 本节点专属的 api 配置子文件夹
+    API_FOLDER = "qwen_image_edit"
 
     # 比例预设 -> 推荐分辨率（宽*高），总像素接近 2048*2048（2.0/3.0 系列均适用，宽高比均在 1:8~8:1 内）
     SIZE_PRESETS = {
@@ -36,7 +38,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
 
     @classmethod
     def _get_api_loader(cls):
-        api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api")
+        api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", cls.API_FOLDER)
         return APILoader(api_dir)
 
     @classmethod
