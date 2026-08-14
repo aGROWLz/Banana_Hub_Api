@@ -101,10 +101,6 @@ class BananaAspectRatioNodeV2(comfy_io.ComfyNode):
         ("9:16", 9 / 16),
         ("4:3", 4 / 3),
         ("3:4", 3 / 4),
-        ("5:4", 5 / 4),
-        ("4:5", 4 / 5),
-        ("3:2", 3 / 2),
-        ("2:3", 2 / 3),
         ("1:1", 1.0),
     )
 
@@ -145,10 +141,10 @@ class BananaAspectRatioNodeV2(comfy_io.ComfyNode):
 
     @classmethod
     def execute(cls, width, height, image_size="原始尺寸", image=None) -> comfy_io.NodeOutput:
-        # 当宽高都是16时，使用图片实际尺寸来计算比例
+        # 当宽高都是16时，使用图片实际尺寸来计算尺寸，比例直接输出 auto
         if width == 16 and height == 16:
             if image is None:
-                raise ValueError("宽高为(16,16)时需连接图片输入，以根据图片实际尺寸计算比例")
+                raise ValueError("宽高为(16,16)时需连接图片输入，以根据图片实际尺寸计算尺寸")
             image_tensor = image[0] if len(image.shape) == 4 else image
             img_height, img_width = image_tensor.shape[:2]
 
@@ -157,6 +153,8 @@ class BananaAspectRatioNodeV2(comfy_io.ComfyNode):
                 width, height = calculate_dimensions_by_pixel_budget(img_width, img_height, "auto", image_size)
             else:
                 width, height = img_width, img_height
+
+            return comfy_io.NodeOutput(AUTO_SIZE, width, height)
 
         if width <= 0 or height <= 0:
             raise ValueError("width 和 height 必须大于 0")
@@ -170,7 +168,7 @@ class BananaAspectRatioNodeV2(comfy_io.ComfyNode):
 
 
 class BananaImageSizeAdapterNodeV2(comfy_io.ComfyNode):
-    RATIO_OPTIONS = [AUTO_SIZE, "16:9", "9:16", "4:3", "3:4", "5:4", "4:5", "3:2", "2:3", "1:1"]
+    RATIO_OPTIONS = [AUTO_SIZE, "16:9", "9:16", "4:3", "3:4", "1:1"]
     SIZE_OPTIONS = ["1K", "2K", "2.5K", "3K", "3.5K", "4K"]
 
     @classmethod
