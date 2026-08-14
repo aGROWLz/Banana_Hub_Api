@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 from comfy_api.latest import io as comfy_io
 import folder_paths
-from ..utils import APILoader
+from ..utils import APILoader, resolve_provider_id
 from ..utils.seedream_utils import SEEDREAM_SIZE_PRESETS, validate_custom_size
 
 
@@ -199,6 +199,8 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
                 model = model.split('(')[0].strip()
 
             config = cls._load_config()
+            # 解析 provider 伪装映射（config 实时读取，修改无需重启）
+            api_provider = resolve_provider_id(config, api_provider)
             provider = cls.api_loader.get_provider(api_provider)
 
             if not provider:

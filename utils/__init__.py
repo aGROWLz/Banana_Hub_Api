@@ -1,4 +1,4 @@
-from .api_loader import APILoader, APIProvider
+from .api_loader import APILoader, APIProvider, resolve_provider_id
 from .gpt_image2_utils import build_request_payload
 from .image_size_utils import (
     AUTO_SIZE,
@@ -11,6 +11,7 @@ from .image_size_utils import (
 __all__ = [
     "APILoader",
     "APIProvider",
+    "resolve_provider_id",
     "build_request_payload",
     "AUTO_SIZE",
     "calculate_bucket_dimensions",

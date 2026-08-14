@@ -164,19 +164,20 @@ class APILoader:
         self._load_providers()
     
     def _load_providers(self):
-        """加载所有 API 提供商配置"""
+        """递归加载所有 API 提供商配置（支持按节点分子文件夹存放）"""
         if not os.path.exists(self.api_dir):
             return
         
-        for filename in os.listdir(self.api_dir):
-            if filename.endswith('.json'):
-                config_path = os.path.join(self.api_dir, filename)
-                try:
-                    provider = APIProvider(config_path)
-                    provider_id = filename.replace('.json', '')
-                    self.providers[provider_id] = provider
-                except Exception as e:
-                    print(f"加载 API 配置失败 {filename}: {e}")
+        for root, _, files in os.walk(self.api_dir):
+            for filename in files:
+                if filename.endswith('.json'):
+                    config_path = os.path.join(root, filename)
+                    try:
+                        provider = APIProvider(config_path)
+                        provider_id = filename.replace('.json', '')
+                        self.providers[provider_id] = provider
+                    except Exception as e:
+                        print(f"加载 API 配置失败 {filename}: {e}")
     
     def get_provider(self, provider_id: str) -> APIProvider:
         """获取指定的 API 提供商"""
@@ -189,3 +190,17 @@ class APILoader:
     def get_provider_ids(self) -> List[str]:
         """获取所有提供商 ID"""
         return list(self.providers.keys())
+
+
+def resolve_provider_id(config, provider_id: str) -> str:
+    """
+    解析 provider 伪装映射。
+    config 的 provider_alias 字段格式: {"<下拉显示的provider_id>": "<真实provider_id>"}
+    例如 {"vector_api": "vai_api"} 表示节点里选 vector_api 时实际指向 vai_api。
+    config 每次执行时实时读取，因此修改无需重启 ComfyUI。
+    """
+    if isinstance(config, dict):
+        aliases = config.get("provider_alias", {})
+        if isinstance(aliases, dict):
+            return aliases.get(provider_id, provider_id)
+    return provider_id

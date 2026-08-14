@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 from comfy_api.latest import io as comfy_io
 import folder_paths
-from ..utils import APILoader
+from ..utils import APILoader, resolve_provider_id
 
 
 class BananaImageGenerationNode(comfy_io.ComfyNode):
@@ -230,6 +230,8 @@ class BananaImageGenerationNode(comfy_io.ComfyNode):
         try:
             # 加载配置和 API 提供商
             config = cls._load_config()
+            # 解析 provider 伪装映射（config 实时读取，修改无需重启）
+            api_provider = resolve_provider_id(config, api_provider)
             provider = cls.api_loader.get_provider(api_provider)
             
             if not provider:
