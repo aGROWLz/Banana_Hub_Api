@@ -109,17 +109,24 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
             image_files.append(("image[]", (f"image_{idx}.png", buffered_file, "image/png")))
             log(f"图片 {idx}: {width}x{height}, 已编码", "i")
 
-        # 可选遮罩：作为独立的 mask 字段上传，PNG 格式，尺寸需与 image 一致
+        # 可选遮罩：ComfyUI Mask（单通道 0-1）→ RGBA PNG，alpha 通道表示编辑区域（透明=编辑位置）
         if mask is not None:
             if len(mask.shape) == 4:
                 mask = mask[0]
-            mask_np = (mask.cpu().numpy() * 255).astype(np.uint8)
-            mask_img = Image.fromarray(mask_np)
+            if len(mask.shape) == 3:
+                mask = mask[0]  # (H, W, 1) → (H, W)
+            mask_np = mask.cpu().numpy()
+            h, w = mask_np.shape[:2]
+            # 透明区域为被编辑位置：alpha = 1 - mask
+            alpha = ((1.0 - mask_np) * 255).astype(np.uint8)
+            rgba = np.zeros((h, w, 4), dtype=np.uint8)
+            rgba[:, :, 3] = alpha
+            mask_img = Image.fromarray(rgba, "RGBA")
             mask_buffer = io.BytesIO()
             mask_img.save(mask_buffer, format="PNG")
             mask_buffer.seek(0)
             image_files.append(("mask", ("mask.png", mask_buffer, "image/png")))
-            log(f"遮罩已编码: {mask_img.size[0]}x{mask_img.size[1]}", "i")
+            log(f"遮罩已编码: {w}x{h}", "i")
 
         return image_files
 
@@ -273,7 +280,7 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
                 comfy_io.Image.Input("image3", optional=True),
                 comfy_io.Image.Input("image4", optional=True),
                 comfy_io.Image.Input("image5", optional=True),
-                comfy_io.Image.Input("mask", optional=True),
+                comfy_io.Mask.Input("mask", optional=True),
                 comfy_io.String.Input("prompt", default="", multiline=True),
                 comfy_io.Combo.Input(
                     "api_provider",
