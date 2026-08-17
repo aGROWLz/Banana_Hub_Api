@@ -11,12 +11,11 @@ import torch
 from PIL import Image
 from comfy_api.latest import io as comfy_io
 
-from ..utils import APILoader, build_request_payload, validate_size_dimensions
+from ..utils import APILoader, validate_custom_dimensions
 
 
 class _GPTImage2BaseNode(comfy_io.ComfyNode):
     api_loader = None
-    provider_id = ""
     log_prefix = "GPT-Image-2"
     save_prefix = "gpt_image2"
     # 本节点专属的 api 配置子文件夹
@@ -27,6 +26,17 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         if cls.api_loader is None:
             api_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", cls.API_FOLDER)
             cls.api_loader = APILoader(api_dir)
+
+    @classmethod
+    def _get_provider_ids(cls):
+        cls._init_api_loader()
+        ids = cls.api_loader.get_provider_ids()
+        return ids if ids else ["vector_gpt2"]
+
+    @classmethod
+    def _get_provider(cls, api_provider):
+        cls._init_api_loader()
+        return cls.api_loader.get_provider(api_provider)
 
     @classmethod
     def _load_config(cls):
@@ -40,11 +50,6 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
             except Exception as e:
                 print(f"加载配置文件失败: {e}，使用默认配置")
         return default_config
-
-    @classmethod
-    def _get_provider(cls):
-        cls._init_api_loader()
-        return cls.api_loader.get_provider(cls.provider_id)
 
     @classmethod
     def _collect_input_images(cls, *images):
@@ -63,10 +68,10 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         return headers
 
     @classmethod
-    def _send_request(cls, *, url, headers, payload, timeout, images, log):
+    def _send_request(cls, *, url, headers, payload, timeout, images, mask, log):
         content_type = payload["content_type"]
         if content_type == "multipart/form-data":
-            files = cls._build_image_files(images, log)
+            files = cls._build_image_files(images, mask, log)
             log(
                 f"发送 multipart 请求，文件数: {len(files)}，字段: {list(payload['body'].keys())}",
                 "i",
@@ -89,7 +94,7 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         return requests.post(url, headers=headers, json=payload["body"], timeout=timeout)
 
     @classmethod
-    def _build_image_files(cls, images, log):
+    def _build_image_files(cls, images, mask, log):
         image_files = []
         for idx, img_tensor in images:
             if len(img_tensor.shape) == 4:
@@ -103,6 +108,19 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
             buffered_file.seek(0)
             image_files.append(("image[]", (f"image_{idx}.png", buffered_file, "image/png")))
             log(f"图片 {idx}: {width}x{height}, 已编码", "i")
+
+        # 可选遮罩：作为独立的 mask 字段上传，PNG 格式，尺寸需与 image 一致
+        if mask is not None:
+            if len(mask.shape) == 4:
+                mask = mask[0]
+            mask_np = (mask.cpu().numpy() * 255).astype(np.uint8)
+            mask_img = Image.fromarray(mask_np)
+            mask_buffer = io.BytesIO()
+            mask_img.save(mask_buffer, format="PNG")
+            mask_buffer.seek(0)
+            image_files.append(("mask", ("mask.png", mask_buffer, "image/png")))
+            log(f"遮罩已编码: {mask_img.size[0]}x{mask_img.size[1]}", "i")
+
         return image_files
 
     @classmethod
@@ -168,15 +186,15 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         return img_tensor
 
     @classmethod
-    def _execute_request(cls, *, request_name, payload, timeout, save_to_output, input_images, log, host_type):
-        provider = cls._get_provider()
+    def _execute_request(cls, *, request_name, api_provider, payload, timeout, save_to_output, input_images, mask, log, host_type):
+        provider = cls._get_provider(api_provider)
         if not provider:
-            raise ValueError(f"未找到 {cls.provider_id} API 配置")
+            raise ValueError(f"未找到 {api_provider} API 配置")
 
         config = cls._load_config()
-        api_key = config.get("api_keys", {}).get("gpt_image2_api", "")
+        api_key = config.get("api_keys", {}).get(api_provider, "")
         if not api_key:
-            raise ValueError("错误: 未设置 API Key，请在配置文件的 api_keys.gpt_image2_api 中设置")
+            raise ValueError(f"错误: 未设置 API Key，请在配置文件的 api_keys.{api_provider} 中设置")
 
         request_format = provider.request_format.get(request_name, {})
         payload["content_type"] = request_format.get(
@@ -192,6 +210,8 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         log(f"请求类型: {request_name}", "i")
         if input_images:
             log(f"输入图片数量: {len(input_images)}", "i")
+        if mask is not None:
+            log("检测到遮罩输入，启用局部编辑", "i")
 
         response = cls._send_request(
             url=url,
@@ -199,149 +219,53 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
             payload=payload,
             timeout=timeout,
             images=input_images,
+            mask=mask,
             log=log,
         )
         return cls._finalize_response(response, provider, timeout, save_to_output, log)
+
+    @classmethod
+    def _extract_value(cls, param_with_providers):
+        """从 'value (provider1, provider2)' 格式中提取实际值"""
+        if "(" in param_with_providers:
+            return param_with_providers.split("(")[0].strip()
+        return param_with_providers
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
         return kwargs.get("seed", 0)
 
 
-class GPTImage2Node(_GPTImage2BaseNode):
-    provider_id = "gpt_image2_api"
-    log_prefix = "GPT-Image-2 Reverse"
-    save_prefix = "gpt_image2_reverse"
-
-    @classmethod
-    def define_schema(cls) -> comfy_io.Schema:
-        provider = cls._get_provider()
-        models = provider.models if provider and provider.models else ["gpt-image-2-all"]
-        image_sizes = provider.image_sizes if provider and provider.image_sizes else [
-            "1024x1024",
-            "1792x1024",
-            "1024x1792",
-        ]
-
-        return comfy_io.Schema(
-            node_id="GPTImage2Reverse",
-            display_name="GPT-Image-2 (逆向)",
-            category="Banana",
-            inputs=[
-                comfy_io.Image.Input("image1", optional=True),
-                comfy_io.Image.Input("image2", optional=True),
-                comfy_io.Image.Input("image3", optional=True),
-                comfy_io.Image.Input("image4", optional=True),
-                comfy_io.Image.Input("image5", optional=True),
-                comfy_io.String.Input("prompt", default="", multiline=True),
-                comfy_io.Combo.Input("host_type", options=["china", "overseas", "custom"], default="china"),
-                comfy_io.Combo.Input("model", options=models, default=models[0]),
-                comfy_io.Combo.Input("size", options=image_sizes, default=image_sizes[0]),
-                comfy_io.Int.Input("n", default=1, min=1, max=10, display_mode=comfy_io.NumberDisplay.number),
-                comfy_io.Combo.Input(
-                    "quality",
-                    options=["", "standard", "hd", "auto", "low", "medium", "high"],
-                    default="",
-                ),
-                comfy_io.Combo.Input(
-                    "response_format",
-                    options=["", "url", "b64_json"],
-                    default="",
-                ),
-                comfy_io.Combo.Input("style", options=["", "vivid", "natural"], default=""),
-                comfy_io.String.Input("user", default=""),
-                comfy_io.Int.Input(
-                    "seed",
-                    default=0,
-                    min=0,
-                    max=0xFFFFFFFFFFFFFFFF,
-                    display_mode=comfy_io.NumberDisplay.number,
-                ),
-                comfy_io.Int.Input(
-                    "timeout",
-                    default=300,
-                    min=10,
-                    max=600,
-                    step=10,
-                    display_mode=comfy_io.NumberDisplay.number,
-                ),
-                comfy_io.Combo.Input("save_to_output", options=["启用", "禁用"], default="启用"),
-            ],
-            outputs=[comfy_io.Image.Output("result_image"), comfy_io.String.Output("log")],
-        )
-
-    @classmethod
-    def execute(
-        cls,
-        host_type,
-        prompt,
-        model,
-        size,
-        n,
-        quality,
-        response_format,
-        style,
-        user,
-        seed,
-        timeout,
-        save_to_output,
-        image1=None,
-        image2=None,
-        image3=None,
-        image4=None,
-        image5=None,
-    ) -> comfy_io.NodeOutput:
-        log_messages = []
-
-        def log(msg, icon="", console_only=False):
-            full_msg = f"{icon} {msg}" if icon else msg
-            if not console_only:
-                log_messages.append(full_msg)
-            print(f"[{cls.log_prefix}] {full_msg}")
-
-        input_images = cls._collect_input_images(image1, image2, image3, image4, image5)
-        request_name = "edit" if input_images else "draw"
-        provider = cls._get_provider()
-        mapped_model = provider.map_model(model) if provider else model
-
-        payload = build_request_payload(
-            provider.config,
-            prompt=prompt,
-            model=mapped_model,
-            size=size,
-            n=n,
-            quality=quality,
-            response_format=response_format,
-            style=style,
-            user=user,
-        )
-        payload["body"]["model"] = mapped_model
-
-        img_tensor = cls._execute_request(
-            request_name=request_name,
-            payload=payload,
-            timeout=timeout,
-            save_to_output=save_to_output,
-            input_images=input_images,
-            log=log,
-            host_type=host_type,
-        )
-        log("处理完成", "OK")
-        return comfy_io.NodeOutput(img_tensor, "\n".join(log_messages))
-
-
 class GPTImage2FullNode(_GPTImage2BaseNode):
-    provider_id = "gpt_image2_full_api"
     log_prefix = "GPT-Image-2 Full"
     save_prefix = "gpt_image2_full"
 
     @classmethod
     def define_schema(cls) -> comfy_io.Schema:
-        provider = cls._get_provider()
-        models = provider.models if provider and provider.models else ["gpt-image-2"]
+        provider_ids = cls._get_provider_ids()
+
+        # 合并所有供应商的模型名（去重，直接以模型名为准，不标注供应商）
+        models_set = set()
+        # 合并所有供应商的尺寸预设
+        sizes_set = set()
+        for pid in provider_ids:
+            provider = cls._get_provider(pid)
+            if provider:
+                models_set.update(provider.models or [])
+                sizes_set.update(provider.image_sizes or [])
+
+        models_options = sorted(models_set) if models_set else ["gpt-image-2"]
+        default_model = models_options[0]
+
+        # 尺寸预设 + “自定义”选项；默认“自定义”沿用宽高输入（1024x1024）
+        CUSTOM_SIZE = "自定义"
+        size_options = sorted(sizes_set) if sizes_set else ["1024x1024"]
+        size_options.append(CUSTOM_SIZE)
+        default_size = CUSTOM_SIZE
+
         return comfy_io.Schema(
             node_id="GPTImage2Full",
-            display_name="GPT-Image-2 (全参数)",
+            display_name="GPT-Image-2",
             category="Banana",
             inputs=[
                 comfy_io.Image.Input("image1", optional=True),
@@ -349,9 +273,20 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
                 comfy_io.Image.Input("image3", optional=True),
                 comfy_io.Image.Input("image4", optional=True),
                 comfy_io.Image.Input("image5", optional=True),
+                comfy_io.Image.Input("mask", optional=True),
                 comfy_io.String.Input("prompt", default="", multiline=True),
+                comfy_io.Combo.Input(
+                    "api_provider",
+                    options=provider_ids,
+                    default=provider_ids[0],
+                ),
                 comfy_io.Combo.Input("host_type", options=["china", "overseas", "custom"], default="china"),
-                comfy_io.Combo.Input("model", options=models, default=models[0]),
+                comfy_io.Combo.Input("model", options=models_options, default=default_model),
+                comfy_io.Combo.Input(
+                    "image_size",
+                    options=size_options,
+                    default=default_size,
+                ),
                 comfy_io.Int.Input(
                     "width",
                     default=1024,
@@ -399,9 +334,11 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
     @classmethod
     def execute(
         cls,
+        api_provider,
         host_type,
         prompt,
         model,
+        image_size,
         width,
         height,
         n,
@@ -416,6 +353,7 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
         image3=None,
         image4=None,
         image5=None,
+        mask=None,
     ) -> comfy_io.NodeOutput:
         log_messages = []
 
@@ -425,11 +363,19 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
                 log_messages.append(full_msg)
             print(f"[{cls.log_prefix}] {full_msg}")
 
-        input_images = cls._collect_input_images(image1, image2, image3, image4, image5)
-        provider = cls._get_provider()
-        mapped_model = provider.map_model(model) if provider else model
-        size = validate_size_dimensions(width, height)
+        model = cls._extract_value(model)
+        provider = cls._get_provider(api_provider)
+        if not provider:
+            raise ValueError(f"未找到 {api_provider} API 配置")
+        mapped_model = provider.map_model(model)
 
+        # 尺寸：选择“自定义”时用宽高输入（≤3840px，16 的倍数），否则用下拉预设值
+        if image_size == "自定义":
+            size = validate_custom_dimensions(width, height)
+        else:
+            size = image_size
+
+        log(f"使用 API: {provider.name}", "i")
         log(f"目标尺寸: {size}", "i")
 
         payload = {
@@ -445,21 +391,21 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
             },
         }
         payload["body"] = {k: v for k, v in payload["body"].items() if v not in (None, "")}
-        request_name = "edit" if input_images else "draw"
+        request_name = "edit" if cls._collect_input_images(image1, image2, image3, image4, image5) else "draw"
+        input_images = cls._collect_input_images(image1, image2, image3, image4, image5)
         if request_name == "draw":
             payload["content_type"] = "application/json"
 
         img_tensor = cls._execute_request(
             request_name=request_name,
+            api_provider=api_provider,
             payload=payload,
             timeout=timeout,
             save_to_output=save_to_output,
             input_images=input_images,
+            mask=mask,
             log=log,
             host_type=host_type,
         )
         log("处理完成", "OK")
         return comfy_io.NodeOutput(img_tensor, "\n".join(log_messages))
-
-
-GPTImage2ReverseNode = GPTImage2Node

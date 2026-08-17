@@ -5,6 +5,7 @@ from .image_size_utils import (
     calculate_bucket_dimensions,
     calculate_dimensions_by_pixel_budget,
     ratio_to_string,
+    validate_custom_dimensions,
     validate_size_dimensions,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "calculate_bucket_dimensions",
     "calculate_dimensions_by_pixel_budget",
     "ratio_to_string",
+    "validate_custom_dimensions",
     "validate_size_dimensions",
 ]

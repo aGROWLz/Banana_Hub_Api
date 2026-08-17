@@ -73,6 +73,17 @@ def validate_size_dimensions(width, height):
     return f"{width}x{height}"
 
 
+def validate_custom_dimensions(width, height):
+    """自定义尺寸校验：仅限制长宽 ≤3840px 且为 16 的倍数。"""
+    if width <= 0 or height <= 0:
+        raise ValueError("width 和 height 必须为正整数")
+    if width > MAX_EDGE or height > MAX_EDGE:
+        raise ValueError(f"图片最大边长不能超过 {MAX_EDGE}px")
+    if width % MULTIPLE != 0 or height % MULTIPLE != 0:
+        raise ValueError(f"宽高必须都是 {MULTIPLE}px 的倍数")
+    return f"{width}x{height}"
+
+
 def resolve_ratio(label, source_width, source_height):
     if label == AUTO_SIZE:
         validate_ratio(source_width, source_height)

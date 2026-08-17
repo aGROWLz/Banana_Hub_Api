@@ -1,15 +1,15 @@
 {
-  "name": "Vector GPT-Image-2 Full API",
-  "description": "VectorEngine GPT-Image-2 edit API with behavior-focused parameters.",
+  "name": "XKU GPT-Image-2 API",
+  "description": "XKU GPT-Image-2 edit API with behavior-focused parameters.",
   "gpt_image2_mode": "official",
   "endpoints": {
     "draw": "/v1/images/generations",
     "edit": "/v1/images/edits"
   },
   "hosts": {
-    "china": "https://api.vectorengine.ai",
-    "overseas": "https://api.zhongzhuan.vip",
-    "custom": "https://api.vectorengine.ai"
+    "china": "https://api-ai.xku.com",
+    "overseas": "https://api-ai.xku.com",
+    "custom": "https://api-ai.xku.com"
   },
   "default_host": "china",
   "request_format": {
@@ -45,6 +45,13 @@
         "quality": "{quality}",
         "moderation": "{moderation}",
         "user": "{user}"
+      },
+      "files": {
+        "mask": {
+          "field": "mask",
+          "required": false,
+          "description": "遮罩图像，一个 PNG 文件，完全透明的区域为将被编辑的位置，小于 4MB，尺寸与 image 一致"
+        }
       }
     }
   },
