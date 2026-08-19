@@ -6,6 +6,7 @@
     "gemini": "your_gemini_api_key_here",
     "vector_gpt2": "your_gpt_image2_api_key_here",
     "xku_gpt2": "your_xku_gpt2_api_key_here",
+    "xku_api": "your_xku_api_key_here",
     "vector_api": "your_vector_api_key_here",
     "fullmodel_api": "your_vector_api_key_here",
     "grok_image_api": "your_grok_image_api_key_here",
