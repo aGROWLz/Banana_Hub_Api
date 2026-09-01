@@ -18,6 +18,7 @@ class GeminiVisionNode(comfy_io.ComfyNode):
     FIXED_API_PROVIDER = "gemini_api"
     FIXED_MODEL = "gemini-3.1-flash-lite"
     API_KEY_SOURCE = "gemini"
+    HOST_API_KEY_SOURCES = {"china": "gemini_china", "overseas": "gemini_overseas"}
     LEGACY_API_KEY_SOURCES = ("gemini_api", "bltai_api")
     # 本节点专属的 api 配置子文件夹
     API_FOLDER = "gemini"
@@ -41,13 +42,16 @@ class GeminiVisionNode(comfy_io.ComfyNode):
         return default_config
 
     @classmethod
-    def _resolve_api_key(cls, api_keys):
+    def _resolve_api_key(cls, api_keys, host_type):
+        host_key_source = cls.HOST_API_KEY_SOURCES.get(host_type)
+        if host_key_source and api_keys.get(host_key_source):
+            return host_key_source, api_keys[host_key_source]
         if api_keys.get(cls.API_KEY_SOURCE):
             return cls.API_KEY_SOURCE, api_keys[cls.API_KEY_SOURCE]
         for key_name in cls.LEGACY_API_KEY_SOURCES:
             if api_keys.get(key_name):
                 return key_name, api_keys[key_name]
-        return cls.API_KEY_SOURCE, ""
+        return host_key_source or cls.API_KEY_SOURCE, ""
 
     @classmethod
     def define_schema(cls) -> comfy_io.Schema:
@@ -180,10 +184,11 @@ class GeminiVisionNode(comfy_io.ComfyNode):
             if not provider:
                 raise ValueError(f"未找到 API 提供商 {cls.FIXED_API_PROVIDER}")
 
-            api_key_source, api_key = cls._resolve_api_key(config.get("api_keys", {}))
+            api_keys = config.get("api_keys", {})
+            api_key_source, api_key = cls._resolve_api_key(api_keys, host_type)
             if not api_key:
                 raise ValueError(
-                    f"错误: 未设置 API Key，请在配置文件的 api_keys.{cls.API_KEY_SOURCE} 中设置"
+                    f"错误: 未设置 API Key，请在配置文件的 api_keys.{api_key_source} 中设置"
                 )
 
             images = [(idx, img) for idx, img in enumerate([image1, image2, image3, image4, image5], 1) if img is not None]
@@ -192,8 +197,6 @@ class GeminiVisionNode(comfy_io.ComfyNode):
                 raise ValueError("请至少提供图片或视频 URL 之一")
 
             endpoint_name = "video_understanding" if has_video else "image_understanding"
-            api_host = provider.get_host(host_type).rstrip("/")
-            draw_url = f"{api_host}{provider.get_endpoint(endpoint_name)}"
             messages = cls._build_messages(prompt, images, video_url, log)
 
             request_body = {
@@ -202,38 +205,64 @@ class GeminiVisionNode(comfy_io.ComfyNode):
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-
             log(f"使用 API 提供商: {provider.name}", "i")
-            log(f"使用 API Host: {api_host}", "i")
-            log(f"使用 API Key: {api_key_source}", "i")
             log(f"使用模型: {cls.FIXED_MODEL}", "i")
             log(f"请求类型: {endpoint_name}", "i")
-            log(f"发送请求到: {draw_url}", "i")
             log(f"内容数量: {len(messages[0]['content'])}", "i", console_only=True)
 
-            response = requests.post(draw_url, headers=headers, json=request_body, timeout=timeout)
-            log(f"收到响应，状态码: {response.status_code}", "i", console_only=True)
-            if response.status_code != 200:
-                raise RuntimeError(f"API 请求失败: {response.status_code} - {response.text[:500]}")
+            fallback_host = {"china": "overseas", "overseas": "china"}.get(host_type)
+            host_types = [host_type, fallback_host] if fallback_host else [host_type]
+            last_error = None
+            for attempt, current_host_type in enumerate(host_types):
+                current_key_source, current_api_key = cls._resolve_api_key(api_keys, current_host_type)
+                if not current_api_key:
+                    raise ValueError(
+                        f"错误: 未设置 API Key，请在配置文件的 api_keys.{current_key_source} 中设置"
+                    )
+                headers = {
+                    "Authorization": f"Bearer {current_api_key}",
+                    "Content-Type": "application/json",
+                }
+                api_host = provider.get_host(current_host_type).rstrip("/")
+                draw_url = f"{api_host}{provider.get_endpoint(endpoint_name)}"
+                if attempt > 0:
+                    log(f"{host_type} 请求失败，自动切换到 {current_host_type}", "!")
+                log(f"使用 API Key: {current_key_source}", "i")
+                log(f"使用 API Host: {api_host}", "i")
+                log(f"发送请求到: {draw_url}", "i")
 
-            try:
-                result = response.json()
-            except json.JSONDecodeError:
-                raise RuntimeError(f"API 返回的不是有效的 JSON 格式\n响应内容: {response.text[:200]}")
+                try:
+                    response = requests.post(draw_url, headers=headers, json=request_body, timeout=timeout)
+                    log(f"收到响应，状态码: {response.status_code}", "i", console_only=True)
+                    if response.status_code != 200:
+                        raise RuntimeError(f"API 请求失败: {response.status_code} - {response.text[:500]}")
 
-            response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-            if isinstance(response_text, list):
-                response_text = "".join(
-                    item.get("text", "") if isinstance(item, dict) else str(item) for item in response_text
-                )
-            if not response_text:
-                response_text = "未收到有效响应"
+                    try:
+                        result = response.json()
+                    except json.JSONDecodeError:
+                        raise RuntimeError(f"API 返回的不是有效的 JSON 格式\n响应内容: {response.text[:200]}")
 
-            log(f"响应内容: {response_text[:200]}..." if len(response_text) > 200 else f"响应内容: {response_text}", "i")
+                    response_text = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if isinstance(response_text, list):
+                        response_text = "".join(
+                            item.get("text", "") if isinstance(item, dict) else str(item) for item in response_text
+                        )
+                    if not response_text:
+                        raise RuntimeError("未收到有效响应")
+
+                    log(
+                        f"响应内容: {response_text[:200]}..."
+                        if len(response_text) > 200
+                        else f"响应内容: {response_text}",
+                        "i",
+                    )
+                    break
+                except Exception as request_error:
+                    last_error = request_error
+                    if attempt == len(host_types) - 1:
+                        raise
+            else:
+                raise last_error
 
             if save_response == "启用":
                 try:
