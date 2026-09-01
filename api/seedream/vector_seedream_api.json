@@ -5,9 +5,9 @@
     "draw": "/v1/images/generations"
   },
   "hosts": {
-    "china": "https://api.zhongzhuan.vip",
-    "overseas": "https://api.zhongzhuan.vip",
-    "custom": "https://api.zhongzhuan.vip"
+    "china": "https://api.relayrouter.ai",
+    "overseas": "https://api.relayrouter.ai",
+    "custom": "https://api.relayrouter.ai"
   },
   "default_host": "china",
   "request_format": {

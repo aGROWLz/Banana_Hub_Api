@@ -6,7 +6,7 @@
   },
   "hosts": {
     "china": "https://api.vectorengine.ai",
-    "overseas": "https://api.zhongzhuan.vip",
+    "overseas": "https://api.relayrouter.ai",
     "custom": "https://api.vectorengine.ai"
   },
   "default_host": "china",

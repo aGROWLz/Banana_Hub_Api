@@ -6,9 +6,9 @@
     "video_understanding": "/v1/chat/completions"
   },
   "hosts": {
-    "china": "https://api.zhongzhuan.vip",
-    "overseas": "https://api.zhongzhuan.vip",
-    "custom": "https://api.zhongzhuan.vip"
+    "china": "https://api.relayrouter.ai",
+    "overseas": "https://api.relayrouter.ai",
+    "custom": "https://api.relayrouter.ai"
   },
   "default_host": "china",
   "request_format": {
@@ -52,7 +52,7 @@
     }
   },
   "models": [
-    "gemini-3.1-flash-lite"
+    "gemini-3.6-flash"
   ],
   "model_mapping": {},
   "image_sizes": [],
