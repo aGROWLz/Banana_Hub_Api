@@ -77,6 +77,11 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
                 "i",
                 console_only=True,
             )
+            log(
+                f"请求体: {json.dumps(payload['body'], ensure_ascii=False)}",
+                "i",
+                console_only=True,
+            )
             request_kwargs = {
                 "headers": headers,
                 "data": payload["body"],
@@ -88,6 +93,11 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
 
         log(
             f"发送 JSON 请求，字段: {list(payload['body'].keys())}",
+            "i",
+            console_only=True,
+        )
+        log(
+            f"请求体: {json.dumps(payload['body'], ensure_ascii=False)}",
             "i",
             console_only=True,
         )
