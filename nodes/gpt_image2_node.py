@@ -11,7 +11,7 @@ import torch
 from PIL import Image
 from comfy_api.latest import io as comfy_io
 
-from ..utils import APILoader, validate_custom_dimensions
+from ..utils import APILoader, resolve_provider_id, validate_custom_dimensions
 
 
 class _GPTImage2BaseNode(comfy_io.ComfyNode):
@@ -54,6 +54,13 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
     @classmethod
     def _collect_input_images(cls, *images):
         return [(idx, img) for idx, img in enumerate(images, 1) if img is not None]
+
+    @staticmethod
+    def _retry_count(user):
+        try:
+            return max(0, int(user or 0))
+        except (TypeError, ValueError):
+            return 0
 
     @classmethod
     def _build_headers(cls, request_format, api_key):
@@ -141,8 +148,8 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         return image_files
 
     @classmethod
-    def _extract_image(cls, result, provider, timeout, log):
-        response_format = provider.response_format.get("draw", {})
+    def _extract_image(cls, result, provider, timeout, log, request_name):
+        response_format = provider.response_format.get(request_name) or provider.response_format.get("draw", {})
         image_url = provider._get_nested_value(result, response_format.get("image_url_path", ""))
         b64_json = provider._get_nested_value(result, response_format.get("b64_json_path", ""))
 
@@ -177,7 +184,7 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
             log(f"保存图片失败: {str(save_error)}", "!")
 
     @classmethod
-    def _finalize_response(cls, response, provider, timeout, save_to_output, log):
+    def _finalize_response(cls, response, provider, timeout, save_to_output, log, request_name):
         log(f"收到响应，状态码: {response.status_code}", "i", console_only=True)
         if response.status_code != 200:
             raise RuntimeError(f"API 请求失败: {response.status_code} - {response.text}")
@@ -192,7 +199,7 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         import re
         debug_result = re.sub(r'"b64_json"\s*:\s*"[^"]{10}[^"]*"', lambda m: m.group()[:m.group().index('"b64_json"') + len('"b64_json"') + 13] + '..."', debug_result)
         log(f"响应: {debug_result[:500]}...", "i")
-        result_img = cls._extract_image(result, provider, timeout, log)
+        result_img = cls._extract_image(result, provider, timeout, log, request_name)
         if save_to_output == "启用":
             cls._save_image(result_img, log)
         else:
@@ -203,26 +210,30 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         return img_tensor
 
     @classmethod
-    def _execute_request(cls, *, request_name, api_provider, payload, timeout, save_to_output, input_images, mask, log, host_type):
-        provider = cls._get_provider(api_provider)
-        if not provider:
-            raise ValueError(f"未找到 {api_provider} API 配置")
-
+    def _execute_request_once(cls, *, request_name, api_provider, payload, timeout, save_to_output, input_images, mask, log, host_type):
         config = cls._load_config()
-        api_key = config.get("api_keys", {}).get(api_provider, "")
+        resolved_provider = resolve_provider_id(config, api_provider)
+        provider = cls._get_provider(resolved_provider)
+        if not provider:
+            raise ValueError(f"未找到 {resolved_provider} API 配置")
+
+        api_key = config.get("api_keys", {}).get(resolved_provider, "")
         if not api_key:
-            raise ValueError(f"错误: 未设置 API Key，请在配置文件的 api_keys.{api_provider} 中设置")
+            raise ValueError(f"错误: 未设置 API Key，请在配置文件的 api_keys.{resolved_provider} 中设置")
 
         request_format = provider.request_format.get(request_name, {})
-        payload["content_type"] = request_format.get(
-            "content_type", payload.get("content_type", "application/json")
-        )
+        attempt_payload = {
+            "content_type": request_format.get("content_type", payload.get("content_type", "application/json")),
+            "body": dict(payload["body"]),
+        }
+        attempt_payload["body"]["model"] = provider.map_model(attempt_payload["body"].get("model", ""))
         headers = cls._build_headers(request_format, api_key)
-        endpoint = provider.get_endpoint(request_name).replace("{model}", str(payload["body"].get("model", "")))
-        url = f"{provider.get_host(host_type).rstrip('/')}{endpoint}"
+        endpoint = provider.get_endpoint(request_name).replace("{model}", str(attempt_payload["body"].get("model", "")))
+        host = provider.get_host(host_type).rstrip("/")
+        url = f"{host}{endpoint}"
 
         log(f"使用 API: {provider.name}", "i")
-        log(f"使用 API Host: {provider.get_host(host_type).rstrip('/')}", "i")
+        log(f"使用 API Host: {host}", "i")
         log(f"发送请求到: {url}", "i")
         log(f"请求类型: {request_name}", "i")
         if input_images:
@@ -233,13 +244,41 @@ class _GPTImage2BaseNode(comfy_io.ComfyNode):
         response = cls._send_request(
             url=url,
             headers=headers,
-            payload=payload,
+            payload=attempt_payload,
             timeout=timeout,
             images=input_images,
             mask=mask,
             log=log,
         )
-        return cls._finalize_response(response, provider, timeout, save_to_output, log)
+        return cls._finalize_response(
+            response=response,
+            provider=provider,
+            timeout=timeout,
+            save_to_output=save_to_output,
+            log=log,
+            request_name=request_name,
+        )
+
+    @classmethod
+    def _execute_request(cls, *, request_name, api_provider, payload, timeout, save_to_output, input_images, mask, log, host_type, retry_count=0):
+        for attempt in range(retry_count + 1):
+            try:
+                log(f"第 {attempt + 1}/{retry_count + 1} 次尝试", "i")
+                return cls._execute_request_once(
+                    request_name=request_name,
+                    api_provider=api_provider,
+                    payload=payload,
+                    timeout=timeout,
+                    save_to_output=save_to_output,
+                    input_images=input_images,
+                    mask=mask,
+                    log=log,
+                    host_type=host_type,
+                )
+            except Exception as error:
+                if attempt >= retry_count:
+                    raise
+                log(f"第 {attempt + 1} 次尝试失败：{error}，准备重试", "!")
 
     @classmethod
     def _extract_value(cls, param_with_providers):
@@ -381,10 +420,6 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
             print(f"[{cls.log_prefix}] {full_msg}")
 
         model = cls._extract_value(model)
-        provider = cls._get_provider(api_provider)
-        if not provider:
-            raise ValueError(f"未找到 {api_provider} API 配置")
-        mapped_model = provider.map_model(model)
 
         # 尺寸：选择“自定义”时用宽高输入（≤3840px，16 的倍数），否则用下拉预设值
         if image_size == "自定义":
@@ -392,19 +427,17 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
         else:
             size = image_size
 
-        log(f"使用 API: {provider.name}", "i")
         log(f"目标尺寸: {size}", "i")
 
         payload = {
             "content_type": "multipart/form-data",
             "body": {
-                "model": mapped_model,
+                "model": model,
                 "prompt": prompt,
                 "n": n,
                 "size": size,
                 "quality": quality,
                 "moderation": moderation,
-                "user": user,
             },
         }
         payload["body"] = {k: v for k, v in payload["body"].items() if v not in (None, "")}
@@ -423,6 +456,7 @@ class GPTImage2FullNode(_GPTImage2BaseNode):
             mask=mask,
             log=log,
             host_type=host_type,
+            retry_count=cls._retry_count(user),
         )
         log("处理完成", "OK")
         return comfy_io.NodeOutput(img_tensor, "\n".join(log_messages))

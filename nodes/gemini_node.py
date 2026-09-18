@@ -301,3 +301,108 @@ class GeminiVisionNode(comfy_io.ComfyNode):
         if kwargs.get("video_url"):
             hashes.append(hash(kwargs["video_url"]))
         return hash(tuple(hashes)) if hashes else 0
+
+
+class GeminiVisionNodeV2(GeminiVisionNode):
+    """Gemini Vision V2，仅增加用于 ComfyUI 缓存控制的随机种子。"""
+
+    @classmethod
+    def define_schema(cls) -> comfy_io.Schema:
+        schema = super().define_schema()
+        return comfy_io.Schema(
+            node_id="GeminiVisionV2",
+            display_name="Gemini Vision API V2",
+            category="Banana",
+            inputs=[
+                comfy_io.Image.Input("image1", optional=True),
+                comfy_io.Image.Input("image2", optional=True),
+                comfy_io.Image.Input("image3", optional=True),
+                comfy_io.Image.Input("image4", optional=True),
+                comfy_io.Image.Input("image5", optional=True),
+                comfy_io.String.Input(
+                    "video_url",
+                    default="",
+                    multiline=False,
+                    placeholder="https://example.com/video.mp4",
+                ),
+                comfy_io.String.Input(
+                    "prompt",
+                    default="",
+                    multiline=True,
+                    placeholder="请输入分析问题或指令",
+                ),
+                comfy_io.Combo.Input("host_type", options=["china", "overseas", "custom"], default="china"),
+                comfy_io.Float.Input(
+                    "temperature",
+                    default=0.7,
+                    min=0.0,
+                    max=2.0,
+                    step=0.1,
+                    display_mode=comfy_io.NumberDisplay.number,
+                ),
+                comfy_io.Int.Input(
+                    "max_tokens",
+                    default=4000,
+                    min=100,
+                    max=65536,
+                    step=100,
+                    display_mode=comfy_io.NumberDisplay.number,
+                ),
+                comfy_io.Int.Input(
+                    "timeout",
+                    default=60,
+                    min=10,
+                    max=300,
+                    step=10,
+                    display_mode=comfy_io.NumberDisplay.number,
+                ),
+                comfy_io.Combo.Input("save_response", options=["启用", "禁用"], default="禁用"),
+                comfy_io.Int.Input(
+                    "seed",
+                    default=0,
+                    min=0,
+                    max=0xFFFFFFFFFFFFFFFF,
+                    display_mode=comfy_io.NumberDisplay.number,
+                ),
+            ],
+            outputs=[
+                comfy_io.String.Output("response_text"),
+                comfy_io.String.Output("log"),
+            ],
+        )
+
+    @classmethod
+    def execute(
+        cls,
+        host_type,
+        prompt,
+        temperature,
+        max_tokens,
+        timeout,
+        save_response,
+        seed,
+        image1=None,
+        image2=None,
+        image3=None,
+        image4=None,
+        image5=None,
+        video_url="",
+    ) -> comfy_io.NodeOutput:
+        return super().execute(
+            host_type=host_type,
+            prompt=prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=timeout,
+            save_response=save_response,
+            image1=image1,
+            image2=image2,
+            image3=image3,
+            image4=image4,
+            image5=image5,
+            video_url=video_url,
+        )
+
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        return kwargs.get("seed", 0)
