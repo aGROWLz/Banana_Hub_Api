@@ -11,14 +11,14 @@ from PIL import Image
 from comfy_api.latest import io as comfy_io
 
 import folder_paths
-from ..utils import APILoader
+from ..utils import APILoader, resolve_provider_id
 
 
 class QwenImageEditNode(comfy_io.ComfyNode):
     """阿里云百炼 千问图像编辑 API 节点，支持 1-3 张图片输入，输出编辑后的图片"""
 
-    FIXED_API_PROVIDER = "qwen_image_edit_api"
-    API_KEY_SOURCE = "qwen_image_edit_api"
+    # 下拉框默认选中的提供商（仅作默认值，实际可由下拉切换或 config provider_alias 指向）
+    DEFAULT_API_PROVIDER = "qwen_image_edit_api"
     # 本节点专属的 api 配置子文件夹
     API_FOLDER = "qwen_image_edit"
 
@@ -54,13 +54,39 @@ class QwenImageEditNode(comfy_io.ComfyNode):
         return default_config
 
     @classmethod
-    def _resolve_api_key(cls, api_keys):
-        return cls.API_KEY_SOURCE, api_keys.get(cls.API_KEY_SOURCE, "")
+    def _resolve_api_key(cls, api_keys, provider_id):
+        return provider_id, api_keys.get(provider_id, "")
 
     @classmethod
     def define_schema(cls) -> comfy_io.Schema:
-        provider = cls._get_api_loader().get_provider(cls.FIXED_API_PROVIDER)
-        models = provider.models if provider else ["qwen-image-2.0-pro"]
+        api_loader = cls._get_api_loader()
+        # 动态列出 api 子文件夹下所有提供商，作为 api_provider 下拉
+        provider_ids = api_loader.get_provider_ids()
+        if not provider_ids:
+            provider_ids = [cls.DEFAULT_API_PROVIDER]
+
+        # 合并所有提供商的模型，并标注各自提供商名称（对齐 banana 节点）
+        models_map = {}
+        for provider_id in provider_ids:
+            provider = api_loader.get_provider(provider_id)
+            if provider:
+                for model in provider.models:
+                    models_map.setdefault(model, []).append(provider.name)
+
+        def build_model_options(model_map):
+            options = []
+            for value, providers in sorted(model_map.items()):
+                providers_str = ", ".join(providers)
+                options.append(f"{value} ({providers_str})")
+            return options
+
+        model_options = build_model_options(models_map) if models_map else ["qwen-image-3.0-pro"]
+        # 默认优先选 3.0 的 pro 模型
+        default_model = model_options[0] if model_options else "qwen-image-3.0-pro"
+        for opt in model_options:
+            if opt.startswith("qwen-image-3.0-pro"):
+                default_model = opt
+                break
         size_options = [cls.AUTO_SIZE] + list(cls.SIZE_PRESETS.keys()) + [cls.CUSTOM_SIZE]
 
         return comfy_io.Schema(
@@ -83,9 +109,14 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                     default="仅图生图",
                 ),
                 comfy_io.Combo.Input(
+                    "api_provider",
+                    options=provider_ids,
+                    default=cls.DEFAULT_API_PROVIDER if cls.DEFAULT_API_PROVIDER in provider_ids else provider_ids[0],
+                ),
+                comfy_io.Combo.Input(
                     "model",
-                    options=models,
-                    default=models[0] if models else "qwen-image-2.0-pro",
+                    options=model_options,
+                    default=default_model,
                 ),
                 comfy_io.Combo.Input(
                     "host_type",
@@ -173,6 +204,7 @@ class QwenImageEditNode(comfy_io.ComfyNode):
         cls,
         prompt,
         input_mode,
+        api_provider,
         model,
         host_type,
         image_size,
@@ -197,16 +229,29 @@ class QwenImageEditNode(comfy_io.ComfyNode):
                 log_messages.append(full_msg)
             print(f"[Qwen Image Edit] {full_msg}")
 
+        def extract_value(param_with_providers):
+            """从 'value (provider1, provider2)' 格式中提取实际值"""
+            if isinstance(param_with_providers, str) and "(" in param_with_providers:
+                return param_with_providers.split("(")[0].strip()
+            return param_with_providers
+
+        # 提取去注释后的真实模型名
+        model = extract_value(model)
+
         try:
             config = cls._load_config()
-            provider = api_loader.get_provider(cls.FIXED_API_PROVIDER)
+            # 解析 provider 伪装映射（config 实时读取，修改无需重启）
+            api_provider = resolve_provider_id(config, api_provider)
+            provider = api_loader.get_provider(api_provider)
             if not provider:
-                raise ValueError(f"未找到 API 提供商 {cls.FIXED_API_PROVIDER}")
+                raise ValueError(f"未找到 API 提供商 {api_provider}")
 
-            api_key_source, api_key = cls._resolve_api_key(config.get("api_keys", {}))
+            api_key_source, api_key = cls._resolve_api_key(
+                config.get("api_keys", {}), api_provider
+            )
             if not api_key:
                 raise ValueError(
-                    f"错误: 未设置 API Key，请在配置文件的 api_keys.{cls.API_KEY_SOURCE} 中设置"
+                    f"错误: 未设置 API Key，请在配置文件的 api_keys.{api_provider} 中设置"
                 )
 
             # 收集输入图片（最多 3 张）

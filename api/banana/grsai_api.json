@@ -2,68 +2,50 @@
   "name": "Grsai API",
   "description": "Grsai 官方 API",
   "endpoints": {
-    "draw": "/v1/api/generate",
-    "result": "/v1/api/result"
+    "draw": "/v1beta/models/{model}:generateContent"
   },
   "hosts": {
     "overseas": "https://grsaiapi.com",
-    "china": "https://grsai.dakka.com.cn"
+    "china": "https://grsai.dakka.com.cn",
+    "custom": "https://grsai.dakka.com.cn"
   },
   "default_host": "china",
   "request_format": {
     "draw": {
       "method": "POST",
+      "content_type": "application/json",
       "headers": {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer {api_key}"
+        "x-goog-api-key": "{api_key}",
+        "Content-Type": "application/json"
       },
       "body": {
-        "model": "{model}",
-        "prompt": "{prompt}",
-        "images": "{urls}",
-        "aspectRatio": "{aspect_ratio}",
-        "imageSize": "{image_size}",
-        "replyType": "async"
-      }
-    },
-    "result": {
-      "method": "GET",
-      "headers": {
-        "Authorization": "Bearer {api_key}"
-      },
-      "query_params": {
-        "id": "{task_id}"
+        "contents": "{contents}",
+        "generationConfig": {
+          "responseModalities": ["TEXT", "IMAGE"],
+          "imageConfig": {
+            "aspectRatio": "{aspect_ratio}",
+            "imageSize": "{image_size}"
+          }
+        }
       }
     }
   },
   "response_format": {
     "draw": {
-      "task_id_path": "id",
-      "success_status": ["running", "succeeded"]
-    },
-    "result": {
-      "status_path": "status",
-      "progress_path": "progress",
-      "image_url_path": "results[0].url",
-      "error_path": "error",
-      "success_status": "succeeded",
-      "failed_status": "failed",
-      "running_status": "running",
-      "violation_status": "violation"
+      "inline_data_path": "candidates[0].content.parts",
+      "success_indicator": "candidates"
     }
   },
   "models": [
-    "nano-banana",
-    "nano-banana-fast",
     "nano-banana-2",
-    "nano-banana-2-cl",
-    "nano-banana-2-4k-cl",
-    "nano-banana-pro",
-    "nano-banana-pro-cl",
-    "nano-banana-pro-vip",
-    "nano-banana-pro-4k-vip"
+    "nano-banana-2.1",
+    "nano-banana-pro"
   ],
+  "model_mapping": {
+    "nano-banana-2": "gemini-3.1-flash-image",
+    "nano-banana-2.1": "nano-banana-2.1",
+    "nano-banana-pro": "gemini-3-pro-image"
+  },
   "image_sizes": ["1K", "2K", "4K"],
-  "aspect_ratios": ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5", "21:9", "1:4", "4:1", "1:8", "8:1"],
-  "reply_types": ["json", "stream", "async"]
+  "aspect_ratios": ["auto", "1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3", "5:4", "4:5", "21:9"]
 }

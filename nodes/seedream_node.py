@@ -184,7 +184,8 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
 
     @classmethod
     def execute(cls, prompt, api_provider, model, host_type, image_size, width, height, seed, n, timeout,
-                image1=None, image2=None, image3=None, image4=None, image5=None) -> comfy_io.NodeOutput:
+                image1=None, image2=None, image3=None, image4=None, image5=None,
+                layer_decomposition=None) -> comfy_io.NodeOutput:
         
         cls._init_api_loader()
         log_messages = []
@@ -264,6 +265,9 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
                 request_body["sequential_image_generation"] = "auto"
                 request_body["sequential_image_generation_options"] = {"max_images": n}
                 log(f"组图模式: 最多生成 {n} 张", "🖼️")
+
+            if layer_decomposition is not None:
+                request_body["layer_decomposition"] = layer_decomposition
 
             if input_images:
                 image_urls = [cls._tensor_to_data_url(img) for _, img in input_images]
@@ -386,3 +390,47 @@ class SeedreamImageGenerationNode(comfy_io.ComfyNode):
             if image is not None:
                 hashes.append(hash(image.cpu().numpy().tobytes()))
         return hash(tuple(hashes))
+
+
+class SeedreamImageGenerationNodeV2(SeedreamImageGenerationNode):
+    """
+    Seedream Image Generation V2，在 V1 基础上增加图层分离开关（layer_decomposition）。
+    其余输入、输出、逻辑与 V1 完全一致。
+    """
+
+    @classmethod
+    def define_schema(cls) -> comfy_io.Schema:
+        schema = super().define_schema()
+        schema.node_id = "SeedreamImageGenerationV2"
+        schema.display_name = "Seedream Image Generation V2 API"
+        schema.inputs = schema.inputs + [
+            comfy_io.Boolean.Input(
+                "layer_decomposition",
+                default=True,
+                tooltip="启用图层分离（layer_decomposition），需配合图生图使用",
+            ),
+        ]
+        return schema
+
+    @classmethod
+    def execute(cls, prompt, api_provider, model, host_type, image_size, width, height, seed, n, timeout,
+                image1=None, image2=None, image3=None, image4=None, image5=None,
+                layer_decomposition=True) -> comfy_io.NodeOutput:
+        return super().execute(
+            prompt=prompt,
+            api_provider=api_provider,
+            model=model,
+            host_type=host_type,
+            image_size=image_size,
+            width=width,
+            height=height,
+            seed=seed,
+            n=n,
+            timeout=timeout,
+            image1=image1,
+            image2=image2,
+            image3=image3,
+            image4=image4,
+            image5=image5,
+            layer_decomposition=layer_decomposition,
+        )

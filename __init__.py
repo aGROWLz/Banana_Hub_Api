@@ -2,6 +2,7 @@ from .nodes import (
     BananaAspectRatioNode,
     BananaAspectRatioNodeV2,
     BananaImageGenerationNode,
+    BananaCustomUrlGenerationNode,
     BananaImageSizeAdapterNode,
     BananaImageSizeAdapterNodeV2,
     GeminiVisionNode,
@@ -13,6 +14,7 @@ from .nodes import (
     CTGTestNode,
     WanImageGenerationNode,
     SeedreamImageGenerationNode,
+    SeedreamImageGenerationNodeV2,
     QwenImageEditNode,
     KieAiQwen3ImageNode,
 )
@@ -25,6 +27,7 @@ class GrsaiApiExtension(ComfyExtension):
     async def get_node_list(self) -> list[type[io.ComfyNode]]:
         return [
             BananaImageGenerationNode,
+            BananaCustomUrlGenerationNode,
             BananaAspectRatioNode,
             BananaAspectRatioNodeV2,
             BananaImageSizeAdapterNode,
@@ -38,6 +41,7 @@ class GrsaiApiExtension(ComfyExtension):
             CTGTestNode,
             WanImageGenerationNode,
             SeedreamImageGenerationNode,
+            SeedreamImageGenerationNodeV2,
             QwenImageEditNode,
             KieAiQwen3ImageNode,
         ]
