@@ -6,6 +6,7 @@ from datetime import datetime
 
 import folder_paths
 import numpy as np
+import base64
 import requests
 import torch
 from PIL import Image

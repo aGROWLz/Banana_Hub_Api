@@ -10,6 +10,9 @@ from .wan_node import WanImageGenerationNode
 from .seedream_node import SeedreamImageGenerationNode, SeedreamImageGenerationNodeV2
 from .qwen_image_edit_node import QwenImageEditNode
 from .kieai_qwen3_node import KieAiQwen3ImageNode
+from .product_detail_agent_node import ProductDetailAgentNode
+from .product_detail_batch_node import ProductDetailBatchNode
+from .product_detail_image_aggregator_node import ProductDetailImageAggregatorNode
 
 __all__ = [
     "BananaImageGenerationNode",
@@ -30,4 +33,7 @@ __all__ = [
     "SeedreamImageGenerationNodeV2",
     "QwenImageEditNode",
     "KieAiQwen3ImageNode",
+    "ProductDetailAgentNode",
+    "ProductDetailBatchNode",
+    "ProductDetailImageAggregatorNode",
 ]

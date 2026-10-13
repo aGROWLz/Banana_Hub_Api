@@ -109,6 +109,35 @@ API 提供商配置文件位于 `api/` 目录下，每个提供商一个 JSON �
 
 ## 节点说明
 
+### 商品详情图 Agent 工作流
+
+新增两个节点用于批量规划和生成商品详情图：
+
+1. **Product Detail Planner Agent**
+   - 输入：一个 `IMAGE` batch 和商品详情图需求 prompt
+   - 使用 Gemini Vision 识别参考图并拆解生成任务
+   - 输出严格 JSON 的 `plan_json`，以及保持原顺序的 `reference_images`
+   - 每个任务对应一张最终图片，任务中包含 `reference_indices` 和独立 prompt
+
+2. **Product Detail GPT Image Batch**
+   - 输入 Agent 输出的 `plan_json` 和 `reference_images`
+   - 所有任务共用 GPT Image provider、模型和生成参数
+   - 每个 task 独立调用一次 GPT Image，并按任务顺序合并输出图片 batch
+   - 输出 `result_json`，记录每个 task 与结果图片索引的对应关系
+
+推荐连接方式：
+
+```text
+参考图 IMAGE batch + 需求 prompt
+              |
+              v
+Product Detail Planner Agent
+       | plan_json + reference_images
+       v
+Product Detail GPT Image Batch
+       | result_images + result_json
+```
+
 ### 1. Banana Image Generation API 节点
 
 用于生成图片的节点。
