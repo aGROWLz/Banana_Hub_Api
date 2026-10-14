@@ -1,0 +1,22 @@
+{
+  "BananaImageGeneration": "Banana 图片生成",
+  "BananaCustomUrlGeneration": "Banana 自定义接口图片生成",
+  "BananaAspectRatio": "Banana 图片比例",
+  "BananaImageSizeAdapter": "Banana 图片尺寸适配",
+  "BananaAspectRatioV2": "Banana 图片比例 V2",
+  "BananaImageSizeAdapterV2": "Banana 图片尺寸适配 V2",
+  "GeminiVision": "Gemini 视觉理解",
+  "GeminiVisionV2": "Gemini 视觉理解 V2",
+  "GPTImage2Full": "GPT Image 图片生成",
+  "GPTImageSizeAdapter": "GPT Image 尺寸适配",
+  "GPTAspectRatio": "GPT Image 图片比例",
+  "GrokImage": "Grok 图片生成",
+  "CTGTestNode": "CTG 图片测试接口",
+  "WanImageGeneration": "Wan 图片生成",
+  "SeedreamImageGeneration": "Seedream 图片生成",
+  "QwenImageEdit": "Qwen 图片编辑",
+  "KieAiQwen3Image": "Kie.ai Qwen3 图片生成",
+  "ProductDetailAgent": "商品详情图规划 Agent",
+  "ProductDetailBatch": "商品详情图 GPT Image 批量生成",
+  "ProductDetailImageAggregator": "商品详情图素材聚合"
+}

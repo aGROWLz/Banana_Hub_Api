@@ -7,8 +7,17 @@ import torch
 REQUIRED_PLAN_FIELDS = {"schema_version", "reference_images", "tasks", "errors"}
 
 
+def is_white_placeholder_image(image: torch.Tensor, max_side: int = 128) -> bool:
+    """Match XKU's small, nearly pure-white placeholder image filter."""
+    if image.ndim == 4:
+        image = image[0]
+    if image.ndim != 3 or image.shape[0] > max_side or image.shape[1] > max_side:
+        return False
+    return bool(torch.min(image) >= (250.0 / 255.0))
+
+
 def aggregate_image_batches(image_inputs: list[Any], max_slots: int = 10) -> torch.Tensor:
-    """Concatenate optional ComfyUI image inputs into one IMAGE batch."""
+    """Concatenate optional ComfyUI image inputs and skip white placeholders."""
     if len(image_inputs) > max_slots:
         raise ValueError(f"At most {max_slots} image slots are supported")
 
@@ -22,7 +31,11 @@ def aggregate_image_batches(image_inputs: list[Any], max_slots: int = 10) -> tor
             image = image.unsqueeze(0)
         if image.ndim != 4:
             raise ValueError("Each image input must have shape [B,H,W,C]")
-        batches.append(image)
+        batches.extend(
+            sample.unsqueeze(0)
+            for sample in image
+            if not is_white_placeholder_image(sample)
+        )
 
     if not batches:
         raise ValueError("At least one image input is required")
