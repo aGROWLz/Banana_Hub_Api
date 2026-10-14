@@ -38,10 +38,12 @@
   },
   "models": [
     "nano-banana-2",
+    "nano-banana-2.1",
     "nano-banana-pro"
   ],
   "model_mapping": {
     "nano-banana-2": "gemini-3.1-flash-image-preview",
+    "nano-banana-2.1": "gemini-nano-banana-2.1-preview",
     "nano-banana-pro": "gemini-3-pro-image-preview"
   },
   "image_sizes": ["1K", "2K", "4K"],
